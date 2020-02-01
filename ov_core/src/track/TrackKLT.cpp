@@ -79,7 +79,7 @@ void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
         img_pyramid_last[cam_id] = imgpyr;
         pts_last[cam_id].clear();
         ids_last[cam_id].clear();
-        ROS_ERROR("[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting.....");
+//        ROS_ERROR("[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting.....");
         return;
     }
 
@@ -222,7 +222,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
         pts_last[cam_id_right].clear();
         ids_last[cam_id_left].clear();
         ids_last[cam_id_right].clear();
-        ROS_ERROR("[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting.....");
+//        ROS_ERROR("[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting.....");
         return;
     }
 

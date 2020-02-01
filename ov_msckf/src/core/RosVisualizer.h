@@ -23,8 +23,8 @@
 
 
 
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
+//#include <ros/ros.h>
+//#include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>

@@ -28,7 +28,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <ros/ros.h>
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 
@@ -64,7 +63,8 @@ namespace ov_core {
          * @brief Default constructor, will load all configuration variables
          * @param nh ROS node handler which we will load parameters from
          */
-        Simulator(ros::NodeHandle& nh);
+//        Simulator(ros::NodeHandle& nh);
+        Simulator();
 
         /**
          * @brief Returns if we are actively simulating

@@ -26,26 +26,27 @@ using namespace ov_core;
 
 
 
-Simulator::Simulator(ros::NodeHandle& nh) {
+//Simulator::Simulator(ros::NodeHandle& nh) {
+Simulator::Simulator() {
 
 
     //===============================================================
     //===============================================================
 
     // Nice startup message
-    ROS_INFO("=======================================");
-    ROS_INFO("VISUAL-INERTIAL SIMULATOR STARTING");
-    ROS_INFO("=======================================");
+//    ROS_INFO("=======================================");
+//    ROS_INFO("VISUAL-INERTIAL SIMULATOR STARTING");
+//    ROS_INFO("=======================================");
 
     // Load the groundtruth trajectory and its spline
     std::string path_traj = "./src/open_vins/ov_data/sim/udel_gore.txt";
-    nh.param<std::string>("sim_traj_path", path_traj, path_traj);
+//    nh.param<std::string>("sim_traj_path", path_traj, path_traj);
     load_data(path_traj);
     spline.feed_trajectory(traj_data);
 
     // Read in sensor simulation frequencies
-    nh.param<double>("sim_freq_cam", freq_cam, 10);
-    nh.param<double>("sim_freq_imu", freq_imu, 200);
+//    nh.param<double>("sim_freq_cam", freq_cam, 10);
+//    nh.param<double>("sim_freq_imu", freq_imu, 200);
 
     // Set all our timestamps as starting from the minimum spline time
     timestamp = spline.get_start_time();
@@ -57,14 +58,14 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     Eigen::Vector3d p_IinG_init;
     bool success_pose_init = spline.get_pose(timestamp, R_GtoI_init, p_IinG_init);
     if(!success_pose_init) {
-        ROS_ERROR("[SIM]: unable to find the first pose in the spline...");
+//        ROS_ERROR("[SIM]: unable to find the first pose in the spline...");
         std::exit(EXIT_FAILURE);
     }
 
     // Find the timestamp that we move enough to be considered "moved"
     double distance = 0.0;
     double distancethreshold = 0.0;
-    nh.param<double>("sim_distance_threshold", distancethreshold, 0.5);
+//    nh.param<double>("sim_distance_threshold", distancethreshold, 0.5);
     while(true) {
 
         // Get the pose at the current timestep
@@ -74,7 +75,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
 
         // Check if it fails
         if(!success_pose) {
-            ROS_ERROR("[SIM]: unable to find jolt in the groundtruth data to initialize at");
+//            ROS_ERROR("[SIM]: unable to find jolt in the groundtruth data to initialize at");
             std::exit(EXIT_FAILURE);
         }
 
@@ -92,7 +93,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
         }
 
     }
-    ROS_INFO("[SIM]: moved %.3f seconds into the dataset where it starts moving",timestamp-spline.get_start_time());
+//    ROS_INFO("[SIM]: moved %.3f seconds into the dataset where it starts moving",timestamp-spline.get_start_time());
 
     // Our simulation is running
     is_running = true;
@@ -102,9 +103,9 @@ Simulator::Simulator(ros::NodeHandle& nh) {
 
     // Load the seeds for the random number generators
     int seed_state_init, sim_seed_preturb, sim_seed_measurements;
-    nh.param<int>("sim_seed_state_init", seed_state_init, 0);
-    nh.param<int>("sim_seed_preturb", sim_seed_preturb, 0);
-    nh.param<int>("sim_seed_measurements", sim_seed_measurements, 0);
+//    nh.param<int>("sim_seed_state_init", seed_state_init, 0);
+//    nh.param<int>("sim_seed_preturb", sim_seed_preturb, 0);
+//    nh.param<int>("sim_seed_measurements", sim_seed_measurements, 0);
     gen_state_init = std::mt19937(seed_state_init);
     gen_state_init.seed(seed_state_init);
     gen_state_perturb = std::mt19937(sim_seed_preturb);
@@ -113,9 +114,9 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     gen_meas_imu.seed(sim_seed_measurements);
 
     // Load number of cameras and number of points
-    nh.param<int>("max_cameras", max_cameras, 1);
-    nh.param<bool>("use_stereo", use_stereo, true);
-    nh.param<int>("num_pts", num_pts, 200);
+//    nh.param<int>("max_cameras", max_cameras, 1);
+//    nh.param<bool>("use_stereo", use_stereo, true);
+//    nh.param<int>("num_pts", num_pts, 200);
 
     // Create generator for our camera
     for(int i=0; i<max_cameras; i++) {
@@ -126,23 +127,23 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     // Global gravity
     std::vector<double> vec_gravity;
     std::vector<double> vec_gravity_default = {0.0,0.0,9.81};
-    nh.param<std::vector<double>>("gravity", vec_gravity, vec_gravity_default);
+//    nh.param<std::vector<double>>("gravity", vec_gravity, vec_gravity_default);
     gravity << vec_gravity.at(0),vec_gravity.at(1),vec_gravity.at(2);
 
     // Timeoffset from camera to IMU
-    nh.param<double>("calib_camimu_dt", calib_camimu_dt, 0.0);
+//    nh.param<double>("calib_camimu_dt", calib_camimu_dt, 0.0);
 
     // Debug print
-    ROS_INFO("SIMULATION PARAMETERS:");
-    ROS_INFO("\t- \033[1;31mbold state init seed: %d \033[0m", seed_state_init);
-    ROS_INFO("\t- \033[1;31mbold perturb seed: %d \033[0m", sim_seed_preturb);
-    ROS_INFO("\t- \033[1;31mbold measurement seed: %d \033[0m", sim_seed_measurements);
-    ROS_INFO("\t- cam feq: %.2f", freq_cam);
-    ROS_INFO("\t- imu feq: %.2f", freq_imu);
-    ROS_INFO("\t- max cameras: %d", max_cameras);
-    ROS_INFO("\t- max features: %d", num_pts);
-    ROS_INFO("\t- gravity: %.3f, %.3f, %.3f", vec_gravity.at(0), vec_gravity.at(1), vec_gravity.at(2));
-    ROS_INFO("\t- cam+imu timeoff: %.3f", calib_camimu_dt);
+//    ROS_INFO("SIMULATION PARAMETERS:");
+//    ROS_INFO("\t- \033[1;31mbold state init seed: %d \033[0m", seed_state_init);
+//    ROS_INFO("\t- \033[1;31mbold perturb seed: %d \033[0m", sim_seed_preturb);
+//    ROS_INFO("\t- \033[1;31mbold measurement seed: %d \033[0m", sim_seed_measurements);
+//    ROS_INFO("\t- cam feq: %.2f", freq_cam);
+//    ROS_INFO("\t- imu feq: %.2f", freq_imu);
+//    ROS_INFO("\t- max cameras: %d", max_cameras);
+//    ROS_INFO("\t- max features: %d", num_pts);
+//    ROS_INFO("\t- gravity: %.3f, %.3f, %.3f", vec_gravity.at(0), vec_gravity.at(1), vec_gravity.at(2));
+//    ROS_INFO("\t- cam+imu timeoff: %.3f", calib_camimu_dt);
 
     // Append the current true bias to our history
     hist_true_bias_time.push_back(timestamp_last_imu-1.0/freq_imu);
@@ -156,17 +157,17 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     std::vector<std::vector<double>> matrix_k_vec, matrix_d_vec, matrix_TCtoI_vec;
 
     // Loop through through, and load each of the cameras
-    ROS_INFO("CAMERA PARAMETERS:");
+//    ROS_INFO("CAMERA PARAMETERS:");
     for(int i=0; i<max_cameras; i++) {
 
         // If our distortions are fisheye or not!
         bool is_fisheye;
-        nh.param<bool>("cam"+std::to_string(i)+"_is_fisheye", is_fisheye, false);
+//        nh.param<bool>("cam"+std::to_string(i)+"_is_fisheye", is_fisheye, false);
 
         // If the desired fov we should simulate
         std::vector<int> matrix_wh;
         std::vector<int> matrix_wd_default = {752,480};
-        nh.param<std::vector<int>>("cam"+std::to_string(i)+"_wh", matrix_wh, matrix_wd_default);
+//        nh.param<std::vector<int>>("cam"+std::to_string(i)+"_wh", matrix_wh, matrix_wd_default);
         std::pair<int,int> wh(matrix_wh.at(0),matrix_wh.at(1));
 
         // Camera intrinsic properties
@@ -174,8 +175,8 @@ Simulator::Simulator(ros::NodeHandle& nh) {
         std::vector<double> matrix_k, matrix_d;
         std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
         std::vector<double> matrix_d_default = {0,0,0,0};
-        nh.param<std::vector<double>>("cam"+std::to_string(i)+"_k", matrix_k, matrix_k_default);
-        nh.param<std::vector<double>>("cam"+std::to_string(i)+"_d", matrix_d, matrix_d_default);
+//        nh.param<std::vector<double>>("cam"+std::to_string(i)+"_k", matrix_k, matrix_k_default);
+//        nh.param<std::vector<double>>("cam"+std::to_string(i)+"_d", matrix_d, matrix_d_default);
         cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
         matrix_k_vec.push_back(matrix_k);
         matrix_d_vec.push_back(matrix_d);
@@ -186,7 +187,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
         std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 
         // Read in from ROS, and save into our eigen mat
-        nh.param<std::vector<double>>("T_C"+std::to_string(i)+"toI", matrix_TCtoI, matrix_TtoI_default);
+//        nh.param<std::vector<double>>("T_C"+std::to_string(i)+"toI", matrix_TCtoI, matrix_TtoI_default);
         T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
                 matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
                 matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
@@ -213,20 +214,20 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     }
 
     // Camera and imu noises
-    nh.param<double>("gyroscope_noise_density", sigma_w, 1.6968e-04);
-    nh.param<double>("accelerometer_noise_density", sigma_a, 2.0000e-3);
-    nh.param<double>("gyroscope_random_walk", sigma_wb, 1.9393e-05);
-    nh.param<double>("accelerometer_random_walk", sigma_ab, 3.0000e-03);
-    nh.param<double>("up_msckf_sigma_px", sigma_pix, 1);
+//    nh.param<double>("gyroscope_noise_density", sigma_w, 1.6968e-04);
+//    nh.param<double>("accelerometer_noise_density", sigma_a, 2.0000e-3);
+//    nh.param<double>("gyroscope_random_walk", sigma_wb, 1.9393e-05);
+//    nh.param<double>("accelerometer_random_walk", sigma_ab, 3.0000e-03);
+//    nh.param<double>("up_msckf_sigma_px", sigma_pix, 1);
 
     // Debug print out
-    ROS_INFO("SENSOR NOISE VALUES:");
-    ROS_INFO("\t- sigma_w: %.4f", sigma_w);
-    ROS_INFO("\t- sigma_a: %.4f", sigma_a);
-    ROS_INFO("\t- sigma_wb: %.4f", sigma_wb);
-    ROS_INFO("\t- sigma_ab: %.4f", sigma_ab);
-    ROS_INFO("\t- sigma_pxmsckf: %.2f", sigma_pix);
-
+//    ROS_INFO("SENSOR NOISE VALUES:");
+//    ROS_INFO("\t- sigma_w: %.4f", sigma_w);
+//    ROS_INFO("\t- sigma_a: %.4f", sigma_a);
+//    ROS_INFO("\t- sigma_wb: %.4f", sigma_wb);
+//    ROS_INFO("\t- sigma_ab: %.4f", sigma_ab);
+//    ROS_INFO("\t- sigma_pxmsckf: %.2f", sigma_pix);
+//
 
     //===============================================================
     //===============================================================
@@ -234,7 +235,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
 
     // Get if we should perturb the initial state estimates for this system
     bool should_perturb;
-    nh.param<bool>("sim_do_perturbation", should_perturb, false);
+//    nh.param<bool>("sim_do_perturbation", should_perturb, false);
 
     // One std generator
     std::normal_distribution<double> w(0,1);
@@ -244,7 +245,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
 
         // cam imu offset
         double temp = calib_camimu_dt+0.01*w(gen_state_perturb);
-        nh.setParam("calib_camimu_dt", temp);
+//        nh.setParam("calib_camimu_dt", temp);
 
         // camera intrinsics and extrinsics
         for(int i=0; i<max_cameras; i++) {
@@ -287,9 +288,9 @@ Simulator::Simulator(ros::NodeHandle& nh) {
             matrix_TCtoI.at(10) = R_calib(2,2);
 
             // Overwrite their values
-            nh.setParam("cam"+std::to_string(i)+"_k", matrix_k);
-            nh.setParam("cam"+std::to_string(i)+"_d", matrix_d);
-            nh.setParam("T_C"+std::to_string(i)+"toI", matrix_TCtoI);
+//            nh.setParam("cam"+std::to_string(i)+"_k", matrix_k);
+//            nh.setParam("cam"+std::to_string(i)+"_d", matrix_d);
+//            nh.setParam("T_C"+std::to_string(i)+"toI", matrix_TCtoI);
 
         }
 
@@ -303,7 +304,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     //double dt = 0.25/freq_cam;
     double dt = 0.25;
     size_t mapsize = featmap.size();
-    ROS_INFO("[SIM]: Generating map features at %d rate",(int)(1.0/dt));
+//    ROS_INFO("[SIM]: Generating map features at %d rate",(int)(1.0/dt));
 
     // Loop through each camera
     // NOTE: we loop through cameras here so that the feature map for camera 1 will always be the same
@@ -314,7 +315,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
         double time_synth = spline.get_start_time();
 
         // Loop through each pose and generate our feature map in them!!!!
-        while(ros::ok()) {
+        while(ok()) {
             // Get the pose at the current timestep
             Eigen::Matrix3d R_GtoI;
             Eigen::Vector3d p_IinG;
@@ -335,7 +336,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
         }
 
         // Debug print
-        ROS_INFO("[SIM]: Generated %d map features in total over %d frames (camera %d)",(int)(featmap.size()-mapsize),(int)((time_synth-spline.get_start_time())/dt),i);
+//        ROS_INFO("[SIM]: Generated %d map features in total over %d frames (camera %d)",(int)(featmap.size()-mapsize),(int)((time_synth-spline.get_start_time())/dt),i);
         mapsize = featmap.size();
 
     }
@@ -344,7 +345,7 @@ Simulator::Simulator(ros::NodeHandle& nh) {
     //for(const auto &feat : featmap) {
     //    cout << feat.second(0) << "," << feat.second(1) << "," << feat.second(2) << std::endl;
     //}
-    sleep(3);
+//    sleep(3);
 
 }
 
@@ -492,7 +493,7 @@ bool Simulator::get_next_cam(double &time_cam, std::vector<int> &camids, std::ve
 
         // If we do not have enough, generate more
         if((int)uvs.size() < num_pts) {
-            ROS_WARN("[SIM]: cam %d was unable to generate enough features (%d < %d projections)",(int)i,(int)uvs.size(),num_pts);
+//            ROS_WARN("[SIM]: cam %d was unable to generate enough features (%d < %d projections)",(int)i,(int)uvs.size(),num_pts);
         }
 
         // If greater than only select the first set
@@ -534,18 +535,18 @@ void Simulator::load_data(std::string path_traj) {
     std::ifstream file;
     file.open(path_traj);
     if (!file) {
-        ROS_ERROR("ERROR: Unable to open simulation trajectory file...");
-        ROS_ERROR("ERROR: %s",path_traj.c_str());
+//        ROS_ERROR("ERROR: Unable to open simulation trajectory file...");
+//        ROS_ERROR("ERROR: %s",path_traj.c_str());
         std::exit(EXIT_FAILURE);
     }
 
     // Debug print
     std::string base_filename = path_traj.substr(path_traj.find_last_of("/\\") + 1);
-    ROS_INFO("[SIM]: loaded trajectory %s",base_filename.c_str());
+//    ROS_INFO("[SIM]: loaded trajectory %s",base_filename.c_str());
 
     // Loop through each line of this file
     std::string current_line;
-    while(std::getline(file, current_line) && ros::ok()) {
+    while(std::getline(file, current_line) && ok()) {
 
         // Skip if we start with a comment
         if(!current_line.find("#"))
@@ -558,7 +559,7 @@ void Simulator::load_data(std::string path_traj) {
         Eigen::Matrix<double,8,1> data;
 
         // Loop through this line (timestamp(s) tx ty tz qx qy qz qw)
-        while(std::getline(s,field,' ') && ros::ok()) {
+        while(std::getline(s,field,' ') && ok()) {
             // Skip if empty
             if(field.empty() || i >= data.rows())
                 continue;
@@ -580,8 +581,8 @@ void Simulator::load_data(std::string path_traj) {
 
     // Error if we don't have any data
     if (traj_data.empty()) {
-        ROS_ERROR("ERROR: Could not parse any data from the file!!");
-        ROS_ERROR("ERROR: %s",path_traj.c_str());
+//        ROS_ERROR("ERROR: Could not parse any data from the file!!");
+//        ROS_ERROR("ERROR: %s",path_traj.c_str());
         std::exit(EXIT_FAILURE);
     }
 

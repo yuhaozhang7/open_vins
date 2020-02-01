@@ -7,7 +7,7 @@ project(ov_eval)
 #set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/)
 
 # Find catkin (the ROS build system)
-find_package(catkin REQUIRED COMPONENTS roscpp rospy geometry_msgs nav_msgs sensor_msgs)
+#find_package(catkin REQUIRED COMPONENTS roscpp rospy geometry_msgs nav_msgs sensor_msgs)
 
 # Include libraries
 find_package(Eigen3 REQUIRED)
@@ -28,11 +28,11 @@ if(PYTHONLIBS_FOUND AND NOT DISABLE_MATPLOTLIB)
 endif()
 
 # Describe catkin project
-catkin_package(
-        CATKIN_DEPENDS roscpp rospy geometry_msgs nav_msgs sensor_msgs
-        INCLUDE_DIRS src
-        LIBRARIES ov_eval_lib
-)
+#catkin_package(
+#        CATKIN_DEPENDS roscpp rospy geometry_msgs nav_msgs sensor_msgs
+#        INCLUDE_DIRS src
+#        LIBRARIES ov_eval_lib
+#)
 
 # Try to compile with c++11
 # http://stackoverflow.com/a/25836953
@@ -61,14 +61,14 @@ include_directories(
         ${PYTHON_INCLUDE_DIRS}
         /usr/local/lib/python2.7/dist-packages/numpy/core/include
         /usr/local/lib/python2.7/site-packages/numpy/core/include
-        ${catkin_INCLUDE_DIRS}
+#        ${catkin_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${PYTHON_LIBRARIES}
-        ${catkin_LIBRARIES}
+#        ${catkin_LIBRARIES}
 )
 
 ##################################################
@@ -120,8 +120,8 @@ target_link_libraries(plot_trajectories ov_eval_lib ${thirdparty_libraries})
 ##################################################
 # Python scripts!
 ##################################################
-catkin_install_python(PROGRAMS python/pid_ros.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-catkin_install_python(PROGRAMS python/pid_sys.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#catkin_install_python(PROGRAMS python/pid_ros.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#catkin_install_python(PROGRAMS python/pid_sys.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 
 

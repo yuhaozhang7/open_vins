@@ -7,7 +7,7 @@ project(ov_msckf)
 #set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/)
 
 # Find catkin (the ROS build system)
-find_package(catkin REQUIRED COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge ov_core)
+#find_package(catkin REQUIRED COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge ov_core)
 
 # Include libraries
 find_package(Eigen3 REQUIRED)
@@ -20,11 +20,11 @@ message(STATUS "OPENCV VERSION: " ${OpenCV_VERSION})
 message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 
 # Describe catkin project
-catkin_package(
-        CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge ov_core
-        INCLUDE_DIRS src
-        LIBRARIES ov_msckf_lib
-)
+#catkin_package(
+#        CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge
+#        INCLUDE_DIRS src
+#        LIBRARIES ov_msckf_lib
+#)
 
 # Try to compile with c++11
 # http://stackoverflow.com/a/25836953
@@ -50,14 +50,16 @@ include_directories(
         src
         ${EIGEN3_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
-        ${catkin_INCLUDE_DIRS}
+        ${CORE_INCLUDE_DIR}
+#        ${catkin_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
-        ${catkin_LIBRARIES}
+        ov_core
+#        ${catkin_LIBRARIES}
 )
 
 ##################################################
@@ -68,7 +70,7 @@ add_library(ov_msckf_lib
         src/state/StateHelper.cpp
         src/state/Propagator.cpp
         src/core/VioManager.cpp
-        src/core/RosVisualizer.cpp
+#        src/core/RosVisualizer.cpp
         src/update/UpdaterHelper.cpp
         src/update/UpdaterMSCKF.cpp
         src/update/UpdaterSLAM.cpp
@@ -87,3 +89,6 @@ target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
 
 add_executable(run_subscribe_msckf src/run_subscribe_msckf.cpp)
 target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
+
+add_executable(run_no_ros src/run_no_ros.cpp)
+target_link_libraries(run_no_ros ov_msckf_lib ${thirdparty_libraries})

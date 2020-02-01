@@ -37,7 +37,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
     }
     dt = sumdt/(traj_points.size()-1);
     dt = (dt < 0.05)? 0.05 : dt;
-    ROS_INFO("[B-SPLINE]: control point dt = %.3f (original dt of %.3f)",dt,sumdt/(traj_points.size()-1));
+//    ROS_INFO("[B-SPLINE]: control point dt = %.3f (original dt of %.3f)",dt,sumdt/(traj_points.size()-1));
 
     // convert all our trajectory points into SE(3) matrices
     // we are given [timestamp, p_IinG, q_GtoI]
@@ -60,8 +60,8 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
             timestamp_max = pose.first;
         }
     }
-    ROS_INFO("[B-SPLINE]: trajectory start time = %.6f",timestamp_min);
-    ROS_INFO("[B-SPLINE]: trajectory end time = %.6f",timestamp_max);
+//    ROS_INFO("[B-SPLINE]: trajectory start time = %.6f",timestamp_min);
+//    ROS_INFO("[B-SPLINE]: trajectory end time = %.6f",timestamp_max);
 
 
     // then create spline control points
@@ -90,7 +90,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
 
     // The start time of the system is two dt in since we need at least two older control points
     timestamp_start = timestamp_min + 2*dt;
-    ROS_INFO("[B-SPLINE]: start trajectory time of %.6f",timestamp_start);
+//    ROS_INFO("[B-SPLINE]: start trajectory time of %.6f",timestamp_start);
 
 }
 

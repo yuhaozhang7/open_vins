@@ -7,7 +7,7 @@ project(ov_core)
 #set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/)
 
 # Find catkin (the ROS build system)
-find_package(catkin REQUIRED COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge)
+#find_package(catkin REQUIRED COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge)
 
 # Include libraries
 find_package(Eigen3 REQUIRED)
@@ -20,11 +20,11 @@ message(STATUS "OPENCV VERSION: " ${OpenCV_VERSION})
 message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 
 # Describe catkin project
-catkin_package(
-        CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge
-        INCLUDE_DIRS src
-        LIBRARIES ov_core_lib
-)
+#catkin_package(
+#        CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge
+#        INCLUDE_DIRS src
+#        LIBRARIES ov_core_lib
+#)
 
 # Try to compile with c++11
 # http://stackoverflow.com/a/25836953
@@ -50,14 +50,14 @@ include_directories(
         src
         ${EIGEN3_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
-        ${catkin_INCLUDE_DIRS}
+#        ${catkin_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
-        ${catkin_LIBRARIES}
+#        ${catkin_LIBRARIES}
 )
 
 ##################################################

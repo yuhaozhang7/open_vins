@@ -29,7 +29,7 @@
 #include <unordered_map>
 #include <Eigen/StdVector>
 
-#include <ros/ros.h>
+//#include <ros/ros.h>
 #include <boost/thread.hpp>
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
