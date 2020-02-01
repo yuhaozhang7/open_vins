@@ -39,7 +39,7 @@
 #include "state/StateHelper.h"
 #include "update/UpdaterMSCKF.h"
 #include "update/UpdaterSLAM.h"
-
+#include "VioManagerOptions.h"
 
 namespace ov_msckf {
 
@@ -63,7 +63,7 @@ namespace ov_msckf {
          * @param nh ROS node handler which we will load parameters from
          */
 //        VioManager(ros::NodeHandle& nh);
-        VioManager();
+        VioManager(VioManagerOptions& options);
 
 
         /**
