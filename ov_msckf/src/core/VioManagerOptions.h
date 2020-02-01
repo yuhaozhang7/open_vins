@@ -18,6 +18,8 @@ namespace ov_msckf {
         std::pair<int,int> wh;
         UpdaterOptions msckf_options, slam_options, aruco_options;
         Eigen::Matrix4d T_CtoI;
+        std::string feat_rep_str;
+        Eigen::Matrix<double,8,1> cam_calib;
     };
 }
 #endif //OPEN_VINS_VIOMANAGEROPTIONS_H

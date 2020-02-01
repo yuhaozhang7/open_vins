@@ -37,7 +37,7 @@ namespace ov_msckf {
         bool do_fej = false;
 
         /// Bool to determine whether or not use imu message averaging
-        bool imu_avg = false;
+        bool use_imu_avg = false;
 
         /// Bool to determine if we should use Rk4 imu integration
         bool use_rk4_integration = false;

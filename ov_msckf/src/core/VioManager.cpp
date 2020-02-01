@@ -21,23 +21,11 @@
 #include "VioManager.h"
 #include "types/Landmark.h"
 
-
-
 using namespace ov_core;
 using namespace ov_msckf;
 
-
-
-
-
 //VioManager::VioManager(ros::NodeHandle &nh) {
 VioManager::VioManager(VioManagerOptions& options) {
-
-
-    //===================================================================================
-    //===================================================================================
-    //===================================================================================
-
 
     // Enforce that if we are doing stereo tracking, we have two cameras
     if(options.state_options.num_cameras < 1) {
@@ -47,17 +35,17 @@ VioManager::VioManager(VioManagerOptions& options) {
     }
 
     // Read in what representation our feature is
-    std::string feat_rep_str;
-    std::transform(feat_rep_str.begin(), feat_rep_str.end(),feat_rep_str.begin(), ::toupper);
+
+    std::transform(options.feat_rep_str.begin(), options.feat_rep_str.end(),options.feat_rep_str.begin(), ::toupper);
 
     // Set what representation we should be using
-    if(feat_rep_str == "GLOBAL_3D") options.state_options.feat_representation = FeatureRepresentation::Representation::GLOBAL_3D;
-    else if(feat_rep_str == "GLOBAL_FULL_INVERSE_DEPTH") options.state_options.feat_representation = FeatureRepresentation::Representation::GLOBAL_FULL_INVERSE_DEPTH;
-    else if(feat_rep_str == "ANCHORED_3D") options.state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_3D;
-    else if(feat_rep_str == "ANCHORED_FULL_INVERSE_DEPTH") options.state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_FULL_INVERSE_DEPTH;
-    else if(feat_rep_str == "ANCHORED_MSCKF_INVERSE_DEPTH") options.state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_MSCKF_INVERSE_DEPTH;
+    if(options.feat_rep_str == "GLOBAL_3D") options.state_options.feat_representation = FeatureRepresentation::Representation::GLOBAL_3D;
+    else if(options.feat_rep_str == "GLOBAL_FULL_INVERSE_DEPTH") options.state_options.feat_representation = FeatureRepresentation::Representation::GLOBAL_FULL_INVERSE_DEPTH;
+    else if(options.feat_rep_str == "ANCHORED_3D") options.state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_3D;
+    else if(options.feat_rep_str == "ANCHORED_FULL_INVERSE_DEPTH") options.state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_FULL_INVERSE_DEPTH;
+    else if(options.feat_rep_str == "ANCHORED_MSCKF_INVERSE_DEPTH") options.state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_MSCKF_INVERSE_DEPTH;
     else {
-        std::cerr<<("VioManager(): invalid feature representation specified = %s", feat_rep_str.c_str());
+        std::cerr<<("VioManager(): invalid feature representation specified = %s", options.feat_rep_str.c_str());
         std::cerr<<("VioManager(): the valid types are:");
         std::cerr<<("\t- GLOBAL_3D");
         std::cerr<<("\t- GLOBAL_FULL_INVERSE_DEPTH");
@@ -76,7 +64,7 @@ VioManager::VioManager(VioManagerOptions& options) {
     // Debug, print to the console!
     std::cout<<("FILTER PARAMETERS:");
     std::cout<<("\t- do fej: %d", options.state_options.do_fej);
-    std::cout<<("\t- do imu avg: %d", options.state_options.imu_avg);
+    std::cout<<("\t- do imu avg: %d", options.state_options.use_imu_avg);
     std::cout<<("\t- calibrate cam to imu: %d", options.state_options.do_calib_camera_pose);
     std::cout<<("\t- calibrate cam intrinsics: %d", options.state_options.do_calib_camera_intrinsics);
     std::cout<<("\t- calibrate cam imu timeoff: %d", options.state_options.do_calib_camera_timeoffset);
@@ -85,7 +73,7 @@ VioManager::VioManager(VioManagerOptions& options) {
     std::cout<<("\t- max aruco: %d", options.state_options.max_aruco_features);
     std::cout<<("\t- max cameras: %d", options.state_options.num_cameras);
     std::cout<<("\t- slam startup delay: %.1f", dt_statupdelay);
-    std::cout<<("\t- feature representation: %s", feat_rep_str.c_str());
+    std::cout<<("\t- feature representation: %s", options.feat_rep_str.c_str());
 
 
     // Debug print initial values our state use
@@ -107,16 +95,12 @@ VioManager::VioManager(VioManagerOptions& options) {
 
         state->get_model_CAM(i) = options.is_fisheye;
 
-        // Camera intrinsic properties
-        Eigen::Matrix<double,8,1> cam_calib;
-        std::vector<double> matrix_k, matrix_d;
-        std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
-        std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
-        cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
+
+
 
         // Save this representation in our state
-        state->get_intrinsics_CAM(i)->set_value(cam_calib);
-        state->get_intrinsics_CAM(i)->set_fej(cam_calib);
+        state->get_intrinsics_CAM(i)->set_value(options.cam_calib);
+        state->get_intrinsics_CAM(i)->set_fej(options.cam_calib);
 
         // Load these into our state
         Eigen::Matrix<double,7,1> cam_eigen;
@@ -127,13 +111,13 @@ VioManager::VioManager(VioManagerOptions& options) {
 
         // Append to our maps for our feature trackers
         camera_fisheye.insert({i,options.is_fisheye});
-        camera_calib.insert({i,cam_calib});
+        camera_calib.insert({i,options.cam_calib});
         camera_wh.insert({i,options.wh});
 
         // Debug printing
         cout << "cam_" << i << "wh:" << endl << options.wh.first << " x " << options.wh.second << endl;
-        cout << "cam_" << i << "K:" << endl << cam_calib.block(0,0,4,1).transpose() << endl;
-        cout << "cam_" << i << "d:" << endl << cam_calib.block(4,0,4,1).transpose() << endl;
+        cout << "cam_" << i << "K:" << endl << options.cam_calib.block(0,0,4,1).transpose() << endl;
+        cout << "cam_" << i << "d:" << endl << options.cam_calib.block(4,0,4,1).transpose() << endl;
         cout << "T_C" << i << "toI:" << endl << options.T_CtoI << endl << endl;
 
     }
