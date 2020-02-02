@@ -17,15 +17,20 @@ namespace ov_msckf {
         // Parameters for our extractor
         int num_pts, fast_threshold, grid_x, grid_y, min_px_dist;
         double knn_ratio;
-        bool use_klt, use_aruco, do_downsizing;
+        bool use_klt, use_aruco, downsize_aruco;
         double init_window_time, init_imu_thresh;
 
-        bool is_fisheye;
-        std::pair<int,int> wh;
         UpdaterOptions msckf_options, slam_options, aruco_options;
-        Eigen::Matrix4d T_CtoI;
         std::string feat_rep_str;
-        Eigen::Matrix<double,8,1> cam_calib;
+
+
+        struct camera_params{
+            bool is_fisheye;
+            Eigen::Matrix<double,8,1> cam_calib;
+            Eigen::Matrix4d T_CtoI;
+            std::pair<int,int> wh;
+        };
+        std::vector<camera_params> cameras;
     };
 }
 #endif //OPEN_VINS_VIOMANAGEROPTIONS_H

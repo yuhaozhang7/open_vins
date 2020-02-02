@@ -83,18 +83,10 @@ static const double default_knn_ratio = 0.85;
 // ===========================================================
 // Inertial sensor noise values and initial parameters
 // ===========================================================
-static double gyroscope_noise_density,
-        accelerometer_noise_density,
-        gyroscope_random_walk,
-        accelerometer_random_walk,
-        init_window_time,
-        init_imu_thresh;
-static const double default_gyroscope_noise_density = 1.6968e-04,
-        default_accelerometer_noise_density = 2.0000e-3,
-        default_gyroscope_random_walk = 1.9393e-05,
-        default_accelerometer_random_walk = 3.0000e-03,
-        default_init_window_time = 0.5,
-        default_init_imu_thresh = 1.0;
+static double init_window_time,
+              init_imu_thresh;
+static const double default_init_window_time = 0.5,
+                    default_init_imu_thresh = 1.0;
 
 
 // ===========================================================
@@ -118,7 +110,7 @@ static const int default_up_msckf_chi2_multipler = 5,
 // Camera intrinsic properties
 std::vector<bool> is_fisheye;
 static const bool default_is_fisheye = false;
-std::vector<double> matrix_k, matrix_d;
+
 std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
 std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
 
@@ -127,9 +119,8 @@ std::vector<int> matrix_wh;
 std::vector<int> matrix_wd_default = {752,480};
 
 // Our camera extrinsics transform
-std::vector<double> matrix_TCtoI;
-std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 
+std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 std::vector<double> vec_gravity;
 std::vector<double> vec_gravity_default = {0.0,0.0,9.81};
 

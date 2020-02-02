@@ -94,29 +94,29 @@ VioManager::VioManager(VioManagerOptions& options) {
 //    TODO: make camera parameters struct
     for(int i=0; i<state->options().max_cameras; i++) {
 
-        state->get_model_CAM(i) = options.is_fisheye;
+        state->get_model_CAM(i) = options.cameras[i].is_fisheye;
 
         // Save this representation in our state
-        state->get_intrinsics_CAM(i)->set_value(options.cam_calib);
-        state->get_intrinsics_CAM(i)->set_fej(options.cam_calib);
+        state->get_intrinsics_CAM(i)->set_value(options.cameras[i].cam_calib);
+        state->get_intrinsics_CAM(i)->set_fej(options.cameras[i].cam_calib);
 
         // Load these into our state
         Eigen::Matrix<double,7,1> cam_eigen;
-        cam_eigen.block(0,0,4,1) = rot_2_quat(options.T_CtoI.block(0,0,3,3).transpose());
-        cam_eigen.block(4,0,3,1) = -options.T_CtoI.block(0,0,3,3).transpose()*options.T_CtoI.block(0,3,3,1);
+        cam_eigen.block(0,0,4,1) = rot_2_quat(options.cameras[i].T_CtoI.block(0,0,3,3).transpose());
+        cam_eigen.block(4,0,3,1) = -options.cameras[i].T_CtoI.block(0,0,3,3).transpose()*options.cameras[i].T_CtoI.block(0,3,3,1);
         state->get_calib_IMUtoCAM(i)->set_value(cam_eigen);
         state->get_calib_IMUtoCAM(i)->set_fej(cam_eigen);
 
         // Append to our maps for our feature trackers
-        camera_fisheye.insert({i,options.is_fisheye});
-        camera_calib.insert({i,options.cam_calib});
-        camera_wh.insert({i,options.wh});
+        camera_fisheye.insert({i,options.cameras[i].is_fisheye});
+        camera_calib.insert({i,options.cameras[i].cam_calib});
+        camera_wh.insert({i,options.cameras[i].wh});
 
         // Debug printing
-        cout << "cam_" << i << "wh:" << endl << options.wh.first << " x " << options.wh.second << endl;
-        cout << "cam_" << i << "K:" << endl << options.cam_calib.block(0,0,4,1).transpose() << endl;
-        cout << "cam_" << i << "d:" << endl << options.cam_calib.block(4,0,4,1).transpose() << endl;
-        cout << "T_C" << i << "toI:" << endl << options.T_CtoI << endl << endl;
+        cout << "cam_" << i << "wh:" << endl << options.cameras[i].wh.first << " x " << options.cameras[i].wh.second << endl;
+        cout << "cam_" << i << "K:" << endl << options.cameras[i].cam_calib.block(0,0,4,1).transpose() << endl;
+        cout << "cam_" << i << "d:" << endl << options.cameras[i].cam_calib.block(4,0,4,1).transpose() << endl;
+        cout << "T_C" << i << "toI:" << endl << options.cameras[i].T_CtoI << endl << endl;
 
     }
 
@@ -150,7 +150,7 @@ VioManager::VioManager(VioManagerOptions& options) {
     std::cout<<("\t- grid size: %d x %d", options.grid_x, options.grid_y);
     std::cout<<("\t- fast threshold: %d", options.fast_threshold);
     std::cout<<("\t- min pixel distance: %d", options.min_px_dist);
-    std::cout<<("\t- downsize aruco image: %d", options.do_downsizing);
+    std::cout<<("\t- downsize aruco image: %d", options.downsize_aruco);
 
 
     //===================================================================================
@@ -174,7 +174,7 @@ VioManager::VioManager(VioManagerOptions& options) {
 
 
     // If downsampling aruco, then double our noise values
-    options.aruco_options.sigma_pix = (options.do_downsizing) ? 2*options.aruco_options.sigma_pix : options.aruco_options.sigma_pix;
+    options.aruco_options.sigma_pix = (options.downsize_aruco) ? 2*options.aruco_options.sigma_pix : options.aruco_options.sigma_pix;
 
     std::cout<<("MSCKFUPDATER PARAMETERS:");
     std::cout<<("\t- sigma_pxmsckf: %.4f", options.msckf_options.sigma_pix);
@@ -201,7 +201,7 @@ VioManager::VioManager(VioManagerOptions& options) {
 
     // Initialize our aruco tag extractor
     if(options.use_aruco) {
-        trackARUCO = new TrackAruco(state->options().max_aruco_features,options.do_downsizing);
+        trackARUCO = new TrackAruco(state->options().max_aruco_features,options.downsize_aruco);
         trackARUCO->set_calibration(camera_calib, camera_fisheye);
     }
 
