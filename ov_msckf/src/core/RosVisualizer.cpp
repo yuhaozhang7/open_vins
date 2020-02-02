@@ -599,12 +599,12 @@ void RosVisualizer::sim_save_total_state_to_file() {
         of_state_gt.precision(7);
         of_state_gt << _sim->get_true_imucamdt() << " ";
         of_state_gt.precision(0);
-        of_state_gt << state->options().num_cameras << " ";
+        of_state_gt << state->options().max_cameras << " ";
         of_state_gt.precision(6);
 
         // CALIBRATION: Write the camera values to file
-        assert(state->options().num_cameras==_sim->get_num_cameras());
-        for(int i=0; i<state->options().num_cameras; i++) {
+        assert(state->options().max_cameras==_sim->get_num_cameras());
+        for(int i=0; i<state->options().max_cameras; i++) {
             // Intrinsics values
             of_state_gt << _sim->get_true_intrinsics().at(i)(0) << " " << _sim->get_true_intrinsics().at(i)(1) << " " << _sim->get_true_intrinsics().at(i)(2) << " " << _sim->get_true_intrinsics().at(i)(3) << " ";
             of_state_gt << _sim->get_true_intrinsics().at(i)(4) << " " << _sim->get_true_intrinsics().at(i)(5) << " " << _sim->get_true_intrinsics().at(i)(6) << " " << _sim->get_true_intrinsics().at(i)(7) << " ";
@@ -660,7 +660,7 @@ void RosVisualizer::sim_save_total_state_to_file() {
     of_state_est.precision(7);
     of_state_est << state->calib_dt_CAMtoIMU()->value()(0) << " ";
     of_state_est.precision(0);
-    of_state_est << state->options().num_cameras << " ";
+    of_state_est << state->options().max_cameras << " ";
     of_state_est.precision(6);
 
     // TIMEOFF: Get the current std values
@@ -670,11 +670,11 @@ void RosVisualizer::sim_save_total_state_to_file() {
         of_state_std << 0.0 << " ";
     }
     of_state_std.precision(0);
-    of_state_std << state->options().num_cameras << " ";
+    of_state_std << state->options().max_cameras << " ";
     of_state_std.precision(6);
 
     // CALIBRATION: Write the camera values to file
-    for(int i=0; i<state->options().num_cameras; i++) {
+    for(int i=0; i<state->options().max_cameras; i++) {
         // Intrinsics values
         of_state_est << state->get_intrinsics_CAM(i)->value()(0) << " " << state->get_intrinsics_CAM(i)->value()(1) << " " << state->get_intrinsics_CAM(i)->value()(2) << " " << state->get_intrinsics_CAM(i)->value()(3) << " ";
         of_state_est << state->get_intrinsics_CAM(i)->value()(4) << " " << state->get_intrinsics_CAM(i)->value()(5) << " " << state->get_intrinsics_CAM(i)->value()(6) << " " << state->get_intrinsics_CAM(i)->value()(7) << " ";

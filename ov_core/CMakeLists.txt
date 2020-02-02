@@ -19,13 +19,6 @@ message(STATUS "EIGEN VERSION: " ${EIGEN3_VERSION})
 message(STATUS "OPENCV VERSION: " ${OpenCV_VERSION})
 message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 
-# Describe catkin project
-#catkin_package(
-#        CATKIN_DEPENDS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge
-#        INCLUDE_DIRS src
-#        LIBRARIES ov_core_lib
-#)
-
 # Try to compile with c++11
 # http://stackoverflow.com/a/25836953
 include(CheckCXXCompilerFlag)
@@ -50,20 +43,18 @@ include_directories(
         src
         ${EIGEN3_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
-#        ${catkin_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
-#        ${catkin_LIBRARIES}
 )
 
 ##################################################
 # Make the core library
 ##################################################
-add_library(ov_core_lib
+add_library(ov_core_lib SHARED
         src/dummy.cpp
         src/init/InertialInitializer.cpp
         src/sim/BsplineSE3.cpp
@@ -83,13 +74,13 @@ target_link_libraries(ov_core_lib ${thirdparty_libraries})
 ##################################################
 # Make binary files!
 ##################################################
-add_executable(test_tracking src/test_tracking.cpp)
-target_link_libraries(test_tracking ov_core_lib ${thirdparty_libraries})
-
-
-add_executable(test_simulator src/test_simulator.cpp)
-target_link_libraries(test_simulator ov_core_lib ${thirdparty_libraries})
-
-
-add_executable(test_repeat src/test_repeat.cpp)
-target_link_libraries(test_repeat ov_core_lib ${thirdparty_libraries})
+#add_executable(test_tracking src/test_tracking.cpp)
+#target_link_libraries(test_tracking ov_core_lib ${thirdparty_libraries})
+#
+#
+#add_executable(test_simulator src/test_simulator.cpp)
+#target_link_libraries(test_simulator ov_core_lib ${thirdparty_libraries})
+#
+#
+#add_executable(test_repeat src/test_repeat.cpp)
+#target_link_libraries(test_repeat ov_core_lib ${thirdparty_libraries})

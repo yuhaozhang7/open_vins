@@ -150,7 +150,7 @@ namespace ov_msckf {
 
         /// Access to a given camera extrinsics
         PoseJPL* get_calib_IMUtoCAM(size_t id) {
-            assert((int)id<_options.num_cameras);
+            assert((int)id<_options.max_cameras);
             return _calib_IMUtoCAM.at(id);
         }
 
@@ -161,13 +161,13 @@ namespace ov_msckf {
 
         /// Access to a given camera intrinsics
         Vec* get_intrinsics_CAM(size_t id) {
-            assert((int)id<_options.num_cameras);
+            assert((int)id<_options.max_cameras);
             return _cam_intrinsics.at(id);
         }
 
         /// Access to a given camera intrinsics
         bool& get_model_CAM(size_t id) {
-            assert((int)id<_options.num_cameras);
+            assert((int)id<_options.max_cameras);
             return _cam_intrinsics_model.at(id);
         }
 

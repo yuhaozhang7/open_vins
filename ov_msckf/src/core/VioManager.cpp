@@ -28,9 +28,9 @@ using namespace ov_msckf;
 VioManager::VioManager(VioManagerOptions& options) {
 
     // Enforce that if we are doing stereo tracking, we have two cameras
-    if(options.state_options.num_cameras < 1) {
+    if(options.state_options.max_cameras < 1) {
         std::cerr<<("VioManager(): Specified number of cameras needs to be greater than zero");
-        std::cerr<<("VioManager(): num cameras = %d", options.state_options.num_cameras);
+        std::cerr<<("VioManager(): num cameras = %d", options.state_options.max_cameras);
         std::exit(EXIT_FAILURE);
     }
 
@@ -71,7 +71,7 @@ VioManager::VioManager(VioManagerOptions& options) {
     std::cout<<("\t- max clones: %d", options.state_options.max_clone_size);
     std::cout<<("\t- max slam: %d", options.state_options.max_slam_features);
     std::cout<<("\t- max aruco: %d", options.state_options.max_aruco_features);
-    std::cout<<("\t- max cameras: %d", options.state_options.num_cameras);
+    std::cout<<("\t- max cameras: %d", options.state_options.max_cameras);
     std::cout<<("\t- slam startup delay: %.1f", dt_statupdelay);
     std::cout<<("\t- feature representation: %s", options.feat_rep_str.c_str());
 
@@ -91,12 +91,10 @@ VioManager::VioManager(VioManagerOptions& options) {
     std::cout<<("CAMERA PARAMETERS:");
 
     // Loop through through, and load each of the cameras
-    for(int i=0; i<state->options().num_cameras; i++) {
+//    TODO: make camera parameters struct
+    for(int i=0; i<state->options().max_cameras; i++) {
 
         state->get_model_CAM(i) = options.is_fisheye;
-
-
-
 
         // Save this representation in our state
         state->get_intrinsics_CAM(i)->set_value(options.cam_calib);
@@ -581,7 +579,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         // Get vectors arrays
         std::map<size_t, Eigen::VectorXd> cameranew_calib;
         std::map<size_t, bool> cameranew_fisheye;
-        for(int i=0; i<state->options().num_cameras; i++) {
+        for(int i=0; i<state->options().max_cameras; i++) {
             Vec* calib = state->get_intrinsics_CAM(i);
             bool isfish = state->get_model_CAM(i);
             cameranew_calib.insert({i,calib->value()});
@@ -633,7 +631,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
     // Debug for camera intrinsics
     if(state->options().do_calib_camera_intrinsics) {
-        for(int i=0; i<state->options().num_cameras; i++) {
+        for(int i=0; i<state->options().max_cameras; i++) {
             Vec* calib = state->get_intrinsics_CAM(i);
             std::cout<<("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f",(int)i,
                     calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
@@ -643,7 +641,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
     // Debug for camera extrinsics
     if(state->options().do_calib_camera_pose) {
-        for(int i=0; i<state->options().num_cameras; i++) {
+        for(int i=0; i<state->options().max_cameras; i++) {
             PoseJPL* calib = state->get_calib_IMUtoCAM(i);
             std::cout<<("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f",(int)i,
                     calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),

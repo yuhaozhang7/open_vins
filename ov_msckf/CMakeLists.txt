@@ -58,14 +58,14 @@ include_directories(
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
-        ov_core
+        ov_core_lib
 #        ${catkin_LIBRARIES}
 )
 
 ##################################################
 # Make the core library
 ##################################################
-add_library(ov_msckf_lib
+add_library(ov_msckf_lib SHARED
         src/state/State.cpp
         src/state/StateHelper.cpp
         src/state/Propagator.cpp
@@ -81,14 +81,14 @@ target_link_libraries(ov_msckf_lib ${thirdparty_libraries})
 ##################################################
 # Make binary files!
 ##################################################
-add_executable(run_serial_msckf src/run_serial_msckf.cpp)
-target_link_libraries(run_serial_msckf ov_msckf_lib ${thirdparty_libraries})
+#add_executable(run_serial_msckf src/run_serial_msckf.cpp)
+#target_link_libraries(run_serial_msckf ov_msckf_lib ${thirdparty_libraries})
+#
+#add_executable(run_simulation src/run_simulation.cpp)
+#target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
+#
+#add_executable(run_subscribe_msckf src/run_subscribe_msckf.cpp)
+#target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
 
-add_executable(run_simulation src/run_simulation.cpp)
-target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
-
-add_executable(run_subscribe_msckf src/run_subscribe_msckf.cpp)
-target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
-
-add_executable(run_no_ros src/run_no_ros.cpp)
-target_link_libraries(run_no_ros ov_msckf_lib ${thirdparty_libraries})
+#add_executable(run_no_ros src/run_no_ros.cpp)
+#target_link_libraries(run_no_ros ov_msckf_lib ${thirdparty_libraries})
