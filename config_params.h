@@ -34,7 +34,7 @@ static const bool default_use_fej = false,
 static const int default_max_clones = 10,
         default_max_slam = 0,
         default_max_aruco = 1024,
-        default_num_cameras = 1;
+        default_max_cameras = 2;
 
 
 // ===========================================================

@@ -66,7 +66,7 @@ bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
     slam_settings->addParameter(TypedParameter<int>("max_clones", "max_clones",     "",    &max_clones, &default_max_clones));
     slam_settings->addParameter(TypedParameter<int>("max_slam", "max_slam",     "",    &max_slam, &default_max_slam));
     slam_settings->addParameter(TypedParameter<int>("max_aruco", "max_aruco",     "",    &max_aruco, &default_max_aruco));
-    slam_settings->addParameter(TypedParameter<int>("max_cameras", "max_cameras",     "",    &max_cameras, &default_num_cameras));
+    slam_settings->addParameter(TypedParameter<int>("max_cameras", "max_cameras",     "",    &max_cameras, &default_max_cameras));
     slam_settings->addParameter(TypedParameter<double>("dt_slam_delay", "dt_slam_delay",     "",    &dt_slam_delay, &default_dt_slam_delay));
     slam_settings->addParameter(TypedParameter<double>("calib_camimu_dt", "calib_camimu_dt",     "",    &calib_camimu_dt, &default_calib_camimu_dt));
     slam_settings->addParameter(TypedParameter<std::string>("fr", "feat_representation",     "",    &feat_representation, &default_feat_representation));
@@ -116,7 +116,7 @@ bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
         bool temp_is_fisheye;
 
         slam_settings->addParameter(TypedParameter<bool>(is_fisheye_name, is_fisheye_name, is_fisheye_name, &temp_is_fisheye, &default_is_fisheye));
-        slam_settings->addParameter(TypedParameter<bool>(wh_name, wh_name, wh_name, &temp_is_fisheye, &default_is_fisheye));
+        slam_settings->addParameter(TypedParameter<std::vector<int>>(wh_name, wh_name, wh_name, &matrix_wh, &matrix_wd_default));
         is_fisheye[i] = temp_is_fisheye;
     }
 
@@ -148,29 +148,31 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
     assert(grey_sensor_one && "At least one camera needed");
 
     for ( int i = 0; i < grey_sensors.size(); i++ )  {
-
-        options.cameras[i].is_fisheye = is_fisheye[i];
-        options.cameras[i].wh = std::pair<int,int>(matrix_wh.at(0),matrix_wh.at(1));
-        options.cameras[i].cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensor_one->Width,
-                                        grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
-                                        grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
-                                        grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
-                                        grey_sensors[i]->RadialTangentialDistortion[0],
-                                        grey_sensors[i]->RadialTangentialDistortion[1],
-                                        grey_sensors[i]->RadialTangentialDistortion[2],
-                                        grey_sensors[i]->RadialTangentialDistortion[3];
+        ov_msckf::VioManagerOptions::camera_params camera;
+        camera.is_fisheye = is_fisheye[i];
+        camera.wh = std::pair<int,int>(matrix_wh.at(0),matrix_wh.at(1));
+        camera.cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensor_one->Width,
+                            grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
+                            grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
+                            grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
+                            grey_sensors[i]->RadialTangentialDistortion[0],
+                            grey_sensors[i]->RadialTangentialDistortion[1],
+                            grey_sensors[i]->RadialTangentialDistortion[2],
+                            grey_sensors[i]->RadialTangentialDistortion[3];
                                         //grey_sensors[i]->RadialTangentialDistortion[4];
-        std::vector<double> matrix_TCtoI;
-//        options.cameras[i].T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
+
+         std::vector<double> matrix_TCtoI;
+//        camera.T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
 //                                     matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
 //                                     matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
 //                                     matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
 //TODO: check if rectification is needed before sending to SLAM system
         img.push_back(new cv::Mat ( grey_sensor_two->Height ,  grey_sensor_two->Width, CV_8UC1));
         inputSize   = make_sb_uint2(grey_sensors[i]->Width,grey_sensors[i]->Height);
-
+        options.cameras.push_back(camera);
     }
 
+    options.feat_rep_str = feat_representation;
     options.state_options.do_fej = use_fej;
     options.state_options.use_imu_avg = use_imu_avg;
     options.state_options.use_rk4_integration = use_rk4_integration;
@@ -220,11 +222,11 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
     pose_output = new slambench::outputs::Output("Pose", slambench::values::VT_POSE, true);
     slam_settings->GetOutputManager().RegisterOutput(pose_output);
 
-    frame1_output = new slambench::outputs::Output("Input Frame", slambench::values::VT_FRAME);
+    frame1_output = new slambench::outputs::Output("Left Frame", slambench::values::VT_FRAME);
     frame1_output->SetKeepOnlyMostRecent(true);
     slam_settings->GetOutputManager().RegisterOutput(frame1_output);
 
-    frame2_output = new slambench::outputs::Output("Tracking frame", slambench::values::VT_FRAME);
+    frame2_output = new slambench::outputs::Output("Right frame", slambench::values::VT_FRAME);
     frame2_output->SetKeepOnlyMostRecent(true);
     slam_settings->GetOutputManager().RegisterOutput(frame2_output);
 
@@ -233,7 +235,7 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
 
 }
 
-bool grey_one_ready = false, grey_two_ready = false;
+bool grey_one_ready = false, grey_two_ready = false, imu_ready = false;
 bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
     assert(s != nullptr);
 
@@ -242,6 +244,7 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
         time_imu = s->Timestamp.S;
         gyr_data << frame_data[0], frame_data[1], frame_data[2];
         acc_data << frame_data[3], frame_data[4], frame_data[5];
+        imu_ready = true;
     }
     else if(s->FrameSensor == grey_sensor_one and img[0]) {
         memcpy(img[0]->data, s->GetData(), s->GetSize());
@@ -263,7 +266,11 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
 bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
 
     // send time, angular velocity, linear acceleration
-    sys->feed_measurement_imu(time_imu, gyr_data, acc_data);
+    if(imu_ready)
+    {
+        imu_ready = false;
+        sys->feed_measurement_imu(time_imu, gyr_data, acc_data);
+    }
 
     if (input_m == input_mode::mono) {
         sys->feed_measurement_monocular(time_cam, *img[0], 0);
@@ -310,10 +317,15 @@ bool sb_update_outputs(SLAMBenchLibraryHelper *lib, const slambench::TimeStamp *
     (void)lib;
 
     if(pose_output->IsActive()) {
+        auto imu_rot = sys->get_state()->imu()->Rot();
+        auto imu_pos = sys->get_state()->imu()->pos();
+
         // Get the current pose as an eigen matrix
         Eigen::Matrix4f matrix;
-        sb_get_pose(&matrix);
+        matrix.block<3,3>(0,0) = imu_rot.cast<float>();
+        matrix.block<3,1>(0,3) = imu_pos.cast<float>();
 
+        std::cout<< "pose:" << matrix << std::endl;
         std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
         pose_output->AddPoint(last_frame_timestamp, new slambench::values::PoseValue(matrix));
     }
@@ -326,13 +338,14 @@ bool sb_update_outputs(SLAMBenchLibraryHelper *lib, const slambench::TimeStamp *
                                                                                             (void *) (img[0]->data)));
 
     }
-//    TODO: show 2nd image here
-    if(frame2_output->IsActive() ) {
+    if(frame2_output->IsActive() && img[1]) {
+
         std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
-        frame2_output->AddPoint(last_frame_timestamp, new slambench::values::FrameValue(inputSize.x, inputSize.y, slambench::io::pixelformat::RGB_III_888,  (void*)(&frameCV.at<char>(0,0))));
+            frame2_output->AddPoint(last_frame_timestamp, new slambench::values::FrameValue(inputSize.x, inputSize.y,
+                                                                                            slambench::io::pixelformat::G_I_8,
+                                                                                            (void *) (img[1]->data)));
+
     }
-
-
 
     return true;
 }
