@@ -119,7 +119,7 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
     }
 
     // Debug info
-    //ROS_INFO("LtoL = %d | good = %d | fromlast = %d",(int)matches_ll.size(),(int)good_left.size(),num_tracklast);
+    std::cout<<"LtoL = " << (int)matches_ll.size() << "| good = " << (int)good_left.size() << " | fromlast = " << num_tracklast << std::endl;
 
 
     // Move forward in time
@@ -130,11 +130,11 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
     // Our timing information
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for detection",(rT2-rT1).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for matching",(rT3-rT2).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for merging",(rT4-rT3).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for feature DB update (%d features)",(rT5-rT4).total_microseconds() * 1e-6, (int)good_left.size());
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for total",(rT5-rT1).total_microseconds() * 1e-6);
+    std::cout<<"[TIME-KLT]: " << (rT2-rT1).total_microseconds() * 1e-6 << " seconds for detection" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT3-rT2).total_microseconds() * 1e-6 << " seconds for matching" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT4-rT3).total_microseconds() * 1e-6 << " seconds for merging" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT5-rT4).total_microseconds() * 1e-6 << " seconds for feature DB update (" << (int)good_left.size() << "features)" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT5-rT1).total_microseconds() * 1e-6 << " seconds for total" << std::endl;
 
 
 }
@@ -278,9 +278,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
 
 
     // Debug info
-    //ROS_INFO("LtoL = %d | RtoR = %d | LtoR = %d | good = %d | fromlast = %d", (int)matches_ll.size(),
-    //         (int)matches_rr.size(),(int)ids_left_new.size(),(int)good_left.size(),num_tracklast);
-
+    std::cout<<"LtoL = " << (int)matches_ll.size() << "| good = " << (int)good_left.size() << " | from last = " << num_tracklast << std::endl;
 
     // Move forward in time
     img_last[cam_id_left] = img_left.clone();
@@ -294,11 +292,11 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
     // Our timing information
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for detection",(rT2-rT1).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for matching",(rT3-rT2).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for merging",(rT4-rT3).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for feature DB update (%d features)",(rT5-rT4).total_microseconds() * 1e-6, (int)good_left.size());
-    //ROS_INFO("[TIME-DESC]: %.4f seconds for total",(rT5-rT1).total_microseconds() * 1e-6);
+    std::cout<<"[TIME-KLT]: " << (rT2-rT1).total_microseconds() * 1e-6 << " seconds for detection" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT3-rT2).total_microseconds() * 1e-6 << " seconds for matching" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT4-rT3).total_microseconds() * 1e-6 << " seconds for merging" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT5-rT4).total_microseconds() * 1e-6 << " seconds for feature DB update (" << (int)good_left.size() << "features)" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT5-rT1).total_microseconds() * 1e-6 << " seconds for total" << std::endl;
 
 }
 

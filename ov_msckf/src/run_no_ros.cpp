@@ -20,29 +20,18 @@
  */
 
 #include "core/VioManager.h"
-#include "core/RosVisualizer.h"
 #include "utils/dataset_reader.h"
 
 
 using namespace ov_msckf;
 
-
 VioManager* sys;
-RosVisualizer* viz;
-
 
 // Main function
 int main(int argc, char** argv)
 {
-
-    // Launch our ros node
-//    ros::init(argc, argv, "run_serial_msckf");
-//    ros::NodeHandle nh("~");
-
     // Create our VIO system
     sys = new VioManager();
-//    viz = new RosVisualizer(nh, sys);
-
 
     //===================================================================================
     //===================================================================================
@@ -93,7 +82,6 @@ int main(int argc, char** argv)
     //===================================================================================
     //===================================================================================
     //===================================================================================
-
 
     // Step through the rosbag
     for (const auto& m : images) {
@@ -195,13 +183,8 @@ int main(int argc, char** argv)
 
     }
 
-    // Final visualization
-//    viz->visualize_final();
-
     // Finally delete our system
     delete sys;
-//    delete viz;
-
 
     // Done!
     return EXIT_SUCCESS;

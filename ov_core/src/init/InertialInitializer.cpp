@@ -43,10 +43,6 @@ void InertialInitializer::feed_imu(double timestamp, Eigen::Matrix<double,3,1> w
 
 }
 
-
-
-
-
 bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<double,4,1> &q_GtoI0, Eigen::Matrix<double,3,1> &b_w0,
                                               Eigen::Matrix<double,3,1> &v_I0inG, Eigen::Matrix<double,3,1> &b_a0, Eigen::Matrix<double,3,1> &p_I0inG) {
 
@@ -71,7 +67,7 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
 
     // Return if both of these failed
     if(window_newest.empty() || window_secondnew.empty()) {
-        //ROS_WARN("InertialInitializer::initialize_with_imu(): unable to select window of IMU readings, not enough readings");
+        std::cerr<<"InertialInitializer::initialize_with_imu(): unable to select window of IMU readings, not enough readings" << std::endl;
         return false;
     }
 
@@ -89,7 +85,7 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
 
     // If it is below the threshold just return
     if(a_var < _imu_excite_threshold) {
-//        ROS_WARN("InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f",a_var,_imu_excite_threshold);
+        std::cerr<<"InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold" << a_var << "<" <<_imu_excite_threshold << std::endl;
         return false;
     }
 

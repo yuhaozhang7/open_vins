@@ -19,7 +19,7 @@ namespace ov_msckf {
         double knn_ratio;
         bool use_klt, use_aruco, downsize_aruco;
         double init_window_time, init_imu_thresh;
-
+        double dt_statupdelay;
         UpdaterOptions msckf_options, slam_options, aruco_options;
         std::string feat_rep_str;
 

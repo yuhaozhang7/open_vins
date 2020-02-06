@@ -73,8 +73,8 @@ namespace ov_core {
 
             // Check that it was successfull
             if (!file) {
-                ROS_ERROR("ERROR: Unable to open groundtruth file...");
-                ROS_ERROR("ERROR: %s", path.c_str());
+                std::cerr<<"ERROR: Unable to open groundtruth file..."<< std::endl;
+                std::cerr<<"ERROR: " << path.c_str()<< std::endl;
                 std::exit(EXIT_FAILURE);
             }
 
@@ -82,7 +82,7 @@ namespace ov_core {
             std::getline(file, line);
 
             // Loop through each line in the file
-            while (std::getline(file, line) && ros::ok()) {
+            while (std::getline(file, line)) {
                 // Loop variables
                 int i = 0;
                 std::istringstream s(line);
@@ -92,8 +92,8 @@ namespace ov_core {
                 while (getline(s, field, ',')) {
                     // Ensure we are in the range
                     if (i > 16) {
-                        ROS_ERROR("ERROR: Invalid groudtruth line, too long!");
-                        ROS_ERROR("ERROR: %s", line.c_str());
+                        std::cerr<<"ERROR: Invalid groudtruth line, too long!" << std::endl;
+                        std::cerr<<"ERROR: " << line.c_str() << std::endl;
                         std::exit(EXIT_FAILURE);
                     }
                     // Save our groundtruth state value
@@ -118,14 +118,14 @@ namespace ov_core {
 
             // Check that we even have groundtruth loaded
             if (gt_states.empty()) {
-                ROS_ERROR_THROTTLE(5, "Groundtruth data loaded is empty, make sure you call load before asking for a state.");
+                std::cerr<<"Groundtruth data loaded is empty, make sure you call load before asking for a state."<< std::endl;
                 return false;
             }
 
             // Loop through gt states and find the closest time stamp
             double closest_time = INFINITY;
             auto it0 = gt_states.begin();
-            while(it0 != gt_states.end() && ros::ok()) {
+            while(it0 != gt_states.end()) {
                 if(std::abs(it0->first-timestep) < std::abs(closest_time-timestep)) {
                     closest_time = it0->first;
                 }
@@ -141,7 +141,7 @@ namespace ov_core {
 
             // Check that we have the timestamp in our GT file
             if(gt_states.find(timestep) == gt_states.end()) {
-                ROS_WARN_THROTTLE(5,"Unable to find %.6f timestamp in GT file, wrong GT file loaded???",timestep);
+                std::cerr<<"Unable to find" << timestep << "timestamp in GT file, wrong GT file loaded???" << std::endl;
                 return false;
             }
 

@@ -60,7 +60,7 @@ void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
     //===================================================================================
 
     // Debug
-    //ROS_INFO("current points = %d,%d",(int)pts_left_last.size(),(int)pts_right_last.size());
+    //std::cout<<"current points = %d,%d",(int)pts_left_last.size(),(int)pts_right_last.size());
 
     // Our return success masks, and predicted new features
     std::vector<uchar> mask_ll;
@@ -79,7 +79,7 @@ void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
         img_pyramid_last[cam_id] = imgpyr;
         pts_last[cam_id].clear();
         ids_last[cam_id].clear();
-//        ROS_ERROR("[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting.....");
+        std::cerr<<"[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting....."<<std::endl;
         return;
     }
 
@@ -120,11 +120,12 @@ void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
     // Timing information
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for pyramid",(rT2-rT1).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for detection",(rT3-rT2).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for temporal klt",(rT4-rT3).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for feature DB update (%d features)",(rT5-rT4).total_microseconds() * 1e-6, (int)good_left.size());
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for total",(rT5-rT1).total_microseconds() * 1e-6);
+    std::cout<<"[TIME-KLT]: " << (rT2-rT1).total_microseconds() * 1e-6 << " seconds for pyramid" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT3-rT2).total_microseconds() * 1e-6 << " seconds for detection" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT4-rT3).total_microseconds() * 1e-6 << " seconds for temporal klt" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT5-rT4).total_microseconds() * 1e-6 << " seconds for stereo klt" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT6-rT5).total_microseconds() * 1e-6 << " seconds for feature DB update (" << (int)good_left.size() << "features)" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT6-rT1).total_microseconds() * 1e-6 << " seconds for total" << std::endl;
 
 
 }
@@ -222,7 +223,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
         pts_last[cam_id_right].clear();
         ids_last[cam_id_left].clear();
         ids_last[cam_id_right].clear();
-//        ROS_ERROR("[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting.....");
+        std::cerr<<"[KLT-EXTRACTOR]: Failed to get enough points to do RANSAC, resetting....."<<std::endl;
         return;
     }
 
@@ -282,12 +283,12 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
 
 
     // Timing information
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for pyramid",(rT2-rT1).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for detection",(rT3-rT2).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for temporal klt",(rT4-rT3).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for stereo klt",(rT5-rT4).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for feature DB update (%d features)",(rT6-rT5).total_microseconds() * 1e-6, (int)good_left.size());
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for total",(rT6-rT1).total_microseconds() * 1e-6);
+    std::cout<<"[TIME-KLT]: " << (rT2-rT1).total_microseconds() * 1e-6 << " seconds for pyramid" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT3-rT2).total_microseconds() * 1e-6 << " seconds for detection" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT4-rT3).total_microseconds() * 1e-6 << " seconds for temporal klt" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT5-rT4).total_microseconds() * 1e-6 << " seconds for stereo klt" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT6-rT5).total_microseconds() * 1e-6 << " seconds for feature DB update (" << (int)good_left.size() << "features)" << std::endl;
+    std::cout<<"[TIME-KLT]: " << (rT6-rT1).total_microseconds() * 1e-6 << " seconds for total" << std::endl;
 
 
 }

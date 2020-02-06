@@ -113,12 +113,23 @@ namespace ov_msckf {
             is_initialized_vio = true;
 
             // Print what we init'ed with
-//            ROS_INFO("\033[0;32m[INIT]: INITIALIZED FROM GROUNDTRUTH FILE!!!!!\033[0m");
-//            ROS_INFO("\033[0;32m[INIT]: orientation = %.4f, %.4f, %.4f, %.4f\033[0m",state->imu()->quat()(0),state->imu()->quat()(1),state->imu()->quat()(2),state->imu()->quat()(3));
-//            ROS_INFO("\033[0;32m[INIT]: bias gyro = %.4f, %.4f, %.4f\033[0m",state->imu()->bias_g()(0),state->imu()->bias_g()(1),state->imu()->bias_g()(2));
-//            ROS_INFO("\033[0;32m[INIT]: velocity = %.4f, %.4f, %.4f\033[0m",state->imu()->vel()(0),state->imu()->vel()(1),state->imu()->vel()(2));
-//            ROS_INFO("\033[0;32m[INIT]: bias accel = %.4f, %.4f, %.4f\033[0m",state->imu()->bias_a()(0),state->imu()->bias_a()(1),state->imu()->bias_a()(2));
-//            ROS_INFO("\033[0;32m[INIT]: position = %.4f, %.4f, %.4f\033[0m",state->imu()->pos()(0),state->imu()->pos()(1),state->imu()->pos()(2));
+            std::cout<<"\033[0;32m[INIT]: INITIALIZED FROM GROUNDTRUTH FILE!!!!!\033[0m" << std::endl;
+            std::cout<<"\033[0;32m[INIT]: orientation = \033[0m" << state->imu()->quat()(0)
+                                                                 << state->imu()->quat()(1)
+                                                                 << state->imu()->quat()(2)
+                                                                 << state->imu()->quat()(3) << std::endl;
+            std::cout<<"\033[0;32m[INIT]: bias gyro = \033[0m" << state->imu()->bias_g()(0)
+                                                               << state->imu()->bias_g()(1)
+                                                               << state->imu()->bias_g()(2) << std::endl;
+            std::cout<<"\033[0;32m[INIT]: velocity = \033[0m" << state->imu()->vel()(0)
+                                                              << state->imu()->vel()(1)
+                                                              << state->imu()->vel()(2) << std::endl;
+            std::cout<<"\033[0;32m[INIT]: bias accel = \033[0m" << state->imu()->bias_a()(0)
+                                                                << state->imu()->bias_a()(1)
+                                                                << state->imu()->bias_a()(2) << std::endl;
+            std::cout<<"\033[0;32m[INIT]: position = \033[0m" << state->imu()->pos()(0)
+                                                              << state->imu()->pos()(1)
+                                                              << state->imu()->pos()(2) << std::endl;
 
         }
 
