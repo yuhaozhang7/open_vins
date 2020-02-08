@@ -131,34 +131,34 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
     assert(grey_sensors[0] && "At least one camera needed");
 
     std::vector<std::vector<double>> matrix_TCtoI_vec;
-    matrix_TCtoI_vec.push_back(std::vector<double>({0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-                                                    0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-                                                    -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-                                                    0.0, 0.0, 0.0, 1.0}));
     matrix_TCtoI_vec.push_back(std::vector<double>({0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
                                                     0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
                                                     -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
                                                     0.0, 0.0, 0.0, 1.0}));
-
+    matrix_TCtoI_vec.push_back(std::vector<double>({0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
+                                                    0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
+                                                    -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
+                                                    0.0, 0.0, 0.0, 1.0}));
+    grey_sensors.pop_back();
     for ( auto i = 0; i < grey_sensors.size(); i++ )  {
         ov_msckf::VioManagerOptions::camera_params camera;
         camera.is_fisheye = is_fisheye[i];
         camera.wh = std::pair<int,int>(grey_sensors[i]->Width,grey_sensors[i]->Height);
         camera.cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensors[i]->Width,
-                grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
-                grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
-                grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
-                grey_sensors[i]->RadialTangentialDistortion[0],
-                grey_sensors[i]->RadialTangentialDistortion[1],
-                grey_sensors[i]->RadialTangentialDistortion[2],
-                grey_sensors[i]->RadialTangentialDistortion[3];
+                            grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
+                            grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
+                            grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
+                            grey_sensors[i]->RadialTangentialDistortion[0],
+                            grey_sensors[i]->RadialTangentialDistortion[1],
+                            grey_sensors[i]->RadialTangentialDistortion[2],
+                            grey_sensors[i]->RadialTangentialDistortion[3];
         //grey_sensors[i]->RadialTangentialDistortion[4];
 
         auto matrix_TCtoI = matrix_TCtoI_vec.at(i);
         camera.T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
-                matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
-                matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
-                matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
+                        matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
+                        matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
+                        matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
         img.push_back(new cv::Mat ( grey_sensors[i]->Height ,  grey_sensors[i]->Width, CV_8UC1));
         img_buffers.push_back(new cv::Mat());
         camera_input_s.push_back(make_sb_uint2(grey_sensors[i]->Width,grey_sensors[i]->Height));

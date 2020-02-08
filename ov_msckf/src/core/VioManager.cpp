@@ -294,9 +294,6 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
         std::cerr<<"Could not initialize!!!"<<std::endl;
         return;
     }
-    cv::imshow("Left image",img0);
-    cv::imshow("Right image",img1);
-    cv::waitKey(0);
     // Call on our propagate and update function
     do_feature_propagate_update(timestamp);
 
@@ -607,7 +604,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     // Timing information
     std::cout<<"\u001b[34m[TIME]:" <<  (rT2-rT1).total_microseconds() * 1e-6 << " seconds for tracking\u001b[0m" << std::endl;
     std::cout<<"\u001b[34m[TIME]:" <<  (rT3-rT2).total_microseconds() * 1e-6 << " seconds for propagation\u001b[0m" <<  std::endl;
-    std::cout<<"\u001b[34m[TIME]:" <<  (rT4-rT3).total_microseconds() * 1e-6 << "seconds for MSCKF update\n (" << (int)good_features_MSCKF.size() << "camera features)\u001b[0m" << std::endl;
+    std::cout<<"\u001b[34m[TIME]:" <<  (rT4-rT3).total_microseconds() * 1e-6 << "seconds for MSCKF update\n (" << (int)good_features_MSCKF.size() << " camera features)\u001b[0m" << std::endl;
     if(state->options().max_slam_features > 0)
         std::cout<<"\u001b[34m[TIME]:" <<  (rT5-rT4).total_microseconds() * 1e-6 << "seconds for SLAM update ("
                  << (int)feats_slam_DELAYED.size() << "camera delayed, "
