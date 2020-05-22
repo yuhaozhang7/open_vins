@@ -81,7 +81,7 @@ namespace ov_msckf {
         /// Nice print function of what parameters we have loaded
         void print() {
             printf("\t- use_fej: %d\n", do_fej);
-            printf("\t- use_imuavg: %d\n", imu_avg);
+            printf("\t- use_imuavg: %d\n", use_imu_avg);
             printf("\t- use_rk4int: %d\n", use_rk4_integration);
             printf("\t- calib_cam_extrinsics: %d\n", do_calib_camera_pose);
             printf("\t- calib_cam_intrinsics: %d\n", do_calib_camera_intrinsics);

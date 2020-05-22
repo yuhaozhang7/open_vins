@@ -405,7 +405,7 @@ void Propagator::predict_mean_discrete(State *state, double dt,
     // If we are averaging the IMU, then do so
     Eigen::Vector3d w_hat = w_hat1;
     Eigen::Vector3d a_hat = a_hat1;
-    if (state->_options.imu_avg) {
+    if (state->_options.use_imu_avg) {
         w_hat = .5*(w_hat1+w_hat2);
         a_hat = .5*(a_hat1+a_hat2);
     }

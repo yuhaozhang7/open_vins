@@ -63,7 +63,7 @@ include_directories(
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
-        ov_core
+        ov_core_lib
 #        ${catkin_LIBRARIES}
 )
 

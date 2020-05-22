@@ -555,15 +555,6 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     double time_total = (rT7-rT1).total_microseconds() * 1e-6;
 
     // Timing information
-<<<<<<< HEAD
-    std::cout<<("\u001b[34m[TIME]: %.4f seconds for tracking\u001b[0m",(rT2-rT1).total_microseconds() * 1e-6);
-    std::cout<<("\u001b[34m[TIME]: %.4f seconds for propagation\u001b[0m",(rT3-rT2).total_microseconds() * 1e-6);
-    std::cout<<("\u001b[34m[TIME]: %.4f seconds for MSCKF update (%d features)\u001b[0m",(rT4-rT3).total_microseconds() * 1e-6, (int)good_features_MSCKF.size());
-//    if(state->options().max_slam_features > 0)
-    std::cout<<("\u001b[34m[TIME]: %.4f seconds for SLAM update (%d delayed, %d update)\u001b[0m",(rT5-rT4).total_microseconds() * 1e-6, (int)feats_slam_DELAYED.size(), (int)feats_slam_UPDATE.size());
-    std::cout<<("\u001b[34m[TIME]: %.4f seconds for marginalization (%d clones in state)\u001b[0m",(rT6-rT5).total_microseconds() * 1e-6, (int)state->n_clones());
-    std::cout<<("\u001b[34m[TIME]: %.4f seconds for total\u001b[0m",(rT6-rT1).total_microseconds() * 1e-6);
-=======
     printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
     printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
     printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
@@ -592,7 +583,6 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         of_statistics.flush();
     }
 
->>>>>>> 930fb925f80f7bbfad517cccedc7315af1379235
 
     // Update our distance traveled
     if(timelastupdate != -1 && state->_clones_IMU.find(timelastupdate) != state->_clones_IMU.end()) {

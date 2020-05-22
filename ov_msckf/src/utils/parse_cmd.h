@@ -50,7 +50,7 @@ namespace ov_msckf {
 
         // Main EKF parameters
         app1.add_option("--use_fej", params.state_options.do_fej, "");
-        app1.add_option("--use_imuavg", params.state_options.imu_avg, "");
+        app1.add_option("--use_imuavg", params.state_options.use_imu_avg, "");
         app1.add_option("--use_rk4int", params.state_options.use_rk4_integration, "");
         app1.add_option("--calib_cam_extrinsics", params.state_options.do_calib_camera_pose, "");
         app1.add_option("--calib_cam_intrinsics", params.state_options.do_calib_camera_intrinsics, "");
