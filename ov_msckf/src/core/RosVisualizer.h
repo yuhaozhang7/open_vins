@@ -76,6 +76,13 @@ namespace ov_msckf {
         void visualize();
 
         /**
+         * @brief Will publish our odometry message for the current timestep.
+         * This will take the current state estimate and get the propagated pose to the desired time.
+         * This can be used to get pose estimates on systems which require high frequency pose estimates.
+         */
+        void visualize_odometry(double timestamp);
+
+        /**
          * @brief After the run has ended, print results
          */
         void visualize_final();
@@ -141,6 +148,8 @@ namespace ov_msckf {
         // For path viz
         unsigned int poses_seq_gt = 0;
         vector<geometry_msgs::PoseStamped> poses_gt;
+        bool publish_global2imu_tf = true;
+        bool publish_calibration_tf = true;
 
         // Files and if we should save total state
         bool save_total_state;
