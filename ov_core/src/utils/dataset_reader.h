@@ -27,8 +27,6 @@
 #include <fstream>
 #include <iostream>
 #include <Eigen/Eigen>
-
-
 #include "colors.h"
 
 

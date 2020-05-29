@@ -158,7 +158,7 @@ namespace ov_core {
             }
 
             // Debugging
-            //std::cout << "feature db size = " << features_idlookup.size() << std::endl;
+            std::cout << "feature db size = " << features_idlookup.size() << std::endl;
 
             // Return the old features
             return feats_old;
@@ -246,8 +246,8 @@ namespace ov_core {
             }
 
             // Debugging
-            //std::cout << "feature db size = " << features_idlookup.size() << std::endl;
-            //std::cout << "return vector = " << feats_has_timestamp.size() << std::endl;
+            std::cout << "feature db size = " << features_idlookup.size() << std::endl;
+            std::cout << "return vector = " << feats_has_timestamp.size() << std::endl;
 
             // Return the features
             return feats_has_timestamp;
@@ -261,7 +261,7 @@ namespace ov_core {
          */
         void cleanup() {
             // Debug
-            //int sizebefore = (int)features_idlookup.size();
+            int sizebefore = (int)features_idlookup.size();
             // Loop through all features
             std::unique_lock<std::mutex> lck(mtx);
             for (auto it = features_idlookup.begin(); it != features_idlookup.end();) {
@@ -274,7 +274,7 @@ namespace ov_core {
                 }
             }
             // Debug
-            //std::cout << "feat db = " << sizebefore << " -> " << (int)features_idlookup.size() << std::endl;
+            std::cout << "feat db = " << sizebefore << " -> " << (int)features_idlookup.size() << std::endl;
         }
 
         /**

@@ -67,7 +67,7 @@ namespace ov_msckf {
         int max_aruco_features = 1024;
 
         /// Number of cameras
-        int num_cameras = 1;
+        int max_cameras = 1;
 
         /// What representation our features are in (msckf features)
         LandmarkRepresentation::Representation feat_rep_msckf = LandmarkRepresentation::Representation::GLOBAL_3D;

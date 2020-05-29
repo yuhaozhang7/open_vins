@@ -80,7 +80,84 @@ namespace ov_msckf {
          * @return Size of the current covariance matrix
          */
         int max_covariance_size() {
-            return (int)_Cov.rows();
+            return (int) _Cov.rows();
+        }
+        /// Access current timestamp
+        double timestamp() {
+            return _timestamp;
+        }
+
+        /// Access options struct
+        StateOptions& options() {
+            return _options;
+        }
+
+        /// Access to IMU type
+        IMU* imu() {
+            return _imu;
+        }
+
+        /// Access covariance matrix
+        Eigen::MatrixXd &Cov() {
+            return _Cov;
+        }
+
+        /// Get size of covariance
+        size_t n_vars() {
+            return _Cov.rows();
+        }
+
+        /// Access imu-camera time offset type
+        Vec* calib_dt_CAMtoIMU() {
+            return _calib_dt_CAMtoIMU;
+        }
+
+        /// Access to a given clone
+        PoseJPL* get_clone(double timestamp) {
+            return _clones_IMU.at(timestamp);
+        }
+
+        /// Access to all current clones in the state
+        std::map<double, PoseJPL*> get_clones() {
+            return _clones_IMU;
+        }
+
+        /// Get current number of clones
+        size_t n_clones() {
+            return _clones_IMU.size();
+        }
+
+        /// Access to a given camera extrinsics
+        PoseJPL* get_calib_IMUtoCAM(size_t id) {
+            assert((int)id<_options.max_cameras);
+            return _calib_IMUtoCAM.at(id);
+        }
+
+        /// Access to all current extrinsic calibration between IMU and each camera
+        std::unordered_map<size_t, PoseJPL*> get_calib_IMUtoCAMs() {
+            return _calib_IMUtoCAM;
+        }
+
+        /// Access to a given camera intrinsics
+        Vec* get_intrinsics_CAM(size_t id) {
+            assert((int)id<_options.max_cameras);
+            return _cam_intrinsics.at(id);
+        }
+
+        /// Access to a given camera intrinsics
+        bool& get_model_CAM(size_t id) {
+            assert((int)id<_options.max_cameras);
+            return _cam_intrinsics_model.at(id);
+        }
+
+        /// Add a SLAM feature
+        void insert_SLAM_feature(size_t featid, Landmark* landmark){
+            _features_SLAM.insert({featid, landmark});
+        }
+
+        /// Access SLAM features
+        std::unordered_map<size_t, Landmark*> &features_SLAM(){
+            return _features_SLAM;
         }
 
 

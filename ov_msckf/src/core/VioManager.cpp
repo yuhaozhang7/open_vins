@@ -26,8 +26,6 @@ using namespace ov_type;
 using namespace ov_msckf;
 
 VioManager::VioManager(VioManagerOptions& params_) {
-
-
     // Nice startup message
     printf("=======================================\n");
     printf("OPENVINS ON-MANIFOLD EKF IS STARTING\n");
@@ -51,7 +49,7 @@ VioManager::VioManager(VioManagerOptions& params_) {
     state->_calib_dt_CAMtoIMU->set_fej(temp_camimu_dt);
 
     // Loop through through, and load each of the cameras
-    for(int i=0; i<state->_options.num_cameras; i++) {
+    for(int i=0; i<state->_options.max_cameras; i++) {
 
         // If our distortions are fisheye or not!
         state->_cam_intrinsics_model.at(i) = params.camera_fisheye.at(i);
@@ -65,7 +63,6 @@ VioManager::VioManager(VioManagerOptions& params_) {
         state->_calib_IMUtoCAM.at(i)->set_fej(params.camera_extrinsics.at(i));
 
     }
-
     //===================================================================================
     //===================================================================================
     //===================================================================================
@@ -120,11 +117,7 @@ VioManager::VioManager(VioManagerOptions& params_) {
     // Make the updater!
     updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
     updaterSLAM = new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options);
-
 }
-
-
-
 
 void VioManager::feed_measurement_imu(double timestamp, Eigen::Vector3d wm, Eigen::Vector3d am) {
 
@@ -137,10 +130,6 @@ void VioManager::feed_measurement_imu(double timestamp, Eigen::Vector3d wm, Eige
     }
 
 }
-
-
-
-
 
 void VioManager::feed_measurement_monocular(double timestamp, cv::Mat& img0, size_t cam_id) {
 
@@ -167,7 +156,11 @@ void VioManager::feed_measurement_monocular(double timestamp, cv::Mat& img0, siz
     // TODO: Or if we are trying to reset the system, then do that here!
     if(!is_initialized_vio) {
         is_initialized_vio = try_to_initialize();
-        if(!is_initialized_vio) return;
+        if(!is_initialized_vio)
+        {
+            std::cerr<<"Could not initialize!!!"<<std::endl;
+            return;
+        }
     }
 
     // Call on our propagate and update function
@@ -175,7 +168,6 @@ void VioManager::feed_measurement_monocular(double timestamp, cv::Mat& img0, siz
 
 
 }
-
 
 void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Mat& img1, size_t cam_id0, size_t cam_id1) {
 
@@ -214,17 +206,16 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
 
     // If we do not have VIO initialization, then try to initialize
     // TODO: Or if we are trying to reset the system, then do that here!
-    if(!is_initialized_vio) {
-        is_initialized_vio = try_to_initialize();
-        if(!is_initialized_vio) return;
+    is_initialized_vio = try_to_initialize();
+    if(!is_initialized_vio)
+    {
+        std::cerr<<"Could not initialize!!!"<<std::endl;
+        return;
     }
-
     // Call on our propagate and update function
     do_feature_propagate_update(timestamp);
 
 }
-
-
 
 void VioManager::feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
 
@@ -257,10 +248,7 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
 
     // Call on our propagate and update function
     do_feature_propagate_update(timestamp);
-
-
 }
-
 
 bool VioManager::try_to_initialize() {
 
@@ -307,8 +295,6 @@ bool VioManager::try_to_initialize() {
     return true;
 
 }
-
-
 
 void VioManager::do_feature_propagate_update(double timestamp) {
 
@@ -438,7 +424,6 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     for(size_t i=0; i<feats_slam.size(); i++) {
         if(state->_features_SLAM.find(feats_slam.at(i)->featid) != state->_features_SLAM.end()) {
             feats_slam_UPDATE.push_back(feats_slam.at(i));
-            //printf("[UPDATE-SLAM]: found old feature %d (%d measurements)\n",(int)feats_slam.at(i)->featid,(int)feats_slam.at(i)->timestamps_left.size());
         } else {
             feats_slam_DELAYED.push_back(feats_slam.at(i));
             //printf("[UPDATE-SLAM]: new feature ready %d (%d measurements)\n",(int)feats_slam.at(i)->featid,(int)feats_slam.at(i)->timestamps_left.size());
@@ -526,7 +511,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         // Get vectors arrays
         std::map<size_t, Eigen::VectorXd> cameranew_calib;
         std::map<size_t, bool> cameranew_fisheye;
-        for(int i=0; i<state->_options.num_cameras; i++) {
+        for(int i=0; i<state->_options.max_cameras; i++) {
             Vec* calib = state->_cam_intrinsics.at(i);
             bool isfish = state->_cam_intrinsics_model.at(i);
             cameranew_calib.insert({i,calib->value()});
@@ -583,7 +568,6 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         of_statistics.flush();
     }
 
-
     // Update our distance traveled
     if(timelastupdate != -1 && state->_clones_IMU.find(timelastupdate) != state->_clones_IMU.end()) {
         Eigen::Matrix<double,3,1> dx = state->_imu->pos() - state->_clones_IMU.at(timelastupdate)->pos();
@@ -593,60 +577,42 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
     // Debug, print our current state
     printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
-            state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
-            state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
-    printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
-             state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
-             state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
+
+           state->imu()->quat()(0),state->imu()->quat()(1),state->imu()->quat()(2),state->imu()->quat()(3),
+           state->imu()->pos()(0),state->imu()->pos()(1),state->imu()->pos()(2),distance);
+    std::cout<<"bg = " << state->imu()->bias_g()(0)
+             << state->imu()->bias_g()(1)
+             << state->imu()->bias_g()(2)
+             << "| ba ="
+             << state->imu()->bias_a()(0)
+             << state->imu()->bias_a()(1)
+             << state->imu()->bias_a()(2) << std::endl;
 
 
     // Debug for camera imu offset
-    if(state->_options.do_calib_camera_timeoffset) {
-        printf("camera-imu timeoffset = %.5f\n",state->_calib_dt_CAMtoIMU->value()(0));
-    }
+//    if(state->options().do_calib_camera_timeoffset) {
+    std::cout<<"camera-imu timeoffset = " << state->calib_dt_CAMtoIMU()->value()(0) << std::endl;
+//    }
 
     // Debug for camera intrinsics
-    if(state->_options.do_calib_camera_intrinsics) {
-        for(int i=0; i<state->_options.num_cameras; i++) {
-            Vec* calib = state->_cam_intrinsics.at(i);
-            printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
-                     calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
-                     calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
+    if(state->options().do_calib_camera_intrinsics) {
+        for(int i=0; i<state->options().max_cameras; i++) {
+            Vec* calib = state->get_intrinsics_CAM(i);
+            printf("camera intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
+                   calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
+                   calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
         }
     }
 
     // Debug for camera extrinsics
-    if(state->_options.do_calib_camera_pose) {
-        for(int i=0; i<state->_options.num_cameras; i++) {
-            PoseJPL* calib = state->_calib_IMUtoCAM.at(i);
-            printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
-                     calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
-                     calib->pos()(0),calib->pos()(1),calib->pos()(2));
+    if(state->options().do_calib_camera_pose) {
+        for(int i=0; i<state->options().max_cameras; i++) {
+            PoseJPL* calib = state->get_calib_IMUtoCAM(i);
+            printf("camera extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
+                   calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
+                   calib->pos()(0),calib->pos()(1),calib->pos()(2));
         }
     }
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

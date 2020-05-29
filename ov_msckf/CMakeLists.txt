@@ -79,8 +79,7 @@ endif()
 ##################################################
 # Make the core library
 ##################################################
-list(APPEND library_source_files
-        src/sim/Simulator.cpp
+add_library(ov_msckf_lib SHARED
         src/state/State.cpp
         src/state/StateHelper.cpp
         src/state/Propagator.cpp
@@ -94,7 +93,6 @@ if (catkin_FOUND)
         src/core/RosVisualizer.cpp
     )
 endif()
-add_library(ov_msckf_lib SHARED ${library_source_files})
 target_link_libraries(ov_msckf_lib ${thirdparty_libraries})
 target_include_directories(ov_msckf_lib PUBLIC src)
 
@@ -126,5 +124,3 @@ target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
 
 add_executable(test_sim_repeat src/test_sim_repeat.cpp)
 target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
-
-
