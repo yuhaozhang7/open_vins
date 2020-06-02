@@ -91,7 +91,7 @@ namespace ov_msckf {
             printf("\t- max_slam_in_update: %d\n", max_slam_in_update);
             printf("\t- max_msckf_in_update: %d\n", max_msckf_in_update);
             printf("\t- max_aruco: %d\n", max_aruco_features);
-            printf("\t- max_cameras: %d\n", num_cameras);
+            printf("\t- max_cameras: %d\n", max_cameras);
             printf("\t- feat_rep_msckf: %s\n", LandmarkRepresentation::as_string(feat_rep_msckf).c_str());
             printf("\t- feat_rep_slam: %s\n", LandmarkRepresentation::as_string(feat_rep_slam).c_str());
             printf("\t- feat_rep_aruco: %s\n", LandmarkRepresentation::as_string(feat_rep_aruco).c_str());

@@ -223,7 +223,7 @@ void RosVisualizer::visualize_final() {
 
     // Final camera intrinsics
     if(_app->get_state()->_options.do_calib_camera_intrinsics) {
-        for(int i=0; i<_app->get_state()->_options.num_cameras; i++) {
+        for(int i=0; i<_app->get_state()->_options.max_cameras; i++) {
             Vec* calib = _app->get_state()->_cam_intrinsics.at(i);
             printf(REDPURPLE "cam%d intrinsics:\n" RESET, (int)i);
             printf(REDPURPLE "%.3f,%.3f,%.3f,%.3f\n" RESET,calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3));
@@ -233,7 +233,7 @@ void RosVisualizer::visualize_final() {
 
     // Final camera extrinsics
     if(_app->get_state()->_options.do_calib_camera_pose) {
-        for(int i=0; i<_app->get_state()->_options.num_cameras; i++) {
+        for(int i=0; i<_app->get_state()->_options.max_cameras; i++) {
             PoseJPL* calib = _app->get_state()->_calib_IMUtoCAM.at(i);
             Eigen::Matrix4d T_CtoI = Eigen::Matrix4d::Identity();
             T_CtoI.block(0,0,3,3) = quat_2_Rot(calib->quat()).transpose();
@@ -742,12 +742,12 @@ void RosVisualizer::sim_save_total_state_to_file() {
             of_state_gt.precision(7);
             of_state_gt << _sim->get_true_paramters().calib_camimu_dt << " ";
             of_state_gt.precision(0);
-            of_state_gt << state->_options.num_cameras << " ";
+            of_state_gt << state->_options.max_cameras << " ";
             of_state_gt.precision(6);
 
             // CALIBRATION: Write the camera values to file
-            assert(state->_options.num_cameras==_sim->get_true_paramters().state_options.num_cameras);
-            for(int i=0; i<state->_options.num_cameras; i++) {
+            assert(state->_options.max_cameras==_sim->get_true_paramters().state_options.max_cameras);
+            for(int i=0; i<state->_options.max_cameras; i++) {
                 // Intrinsics values
                 of_state_gt << _sim->get_true_paramters().camera_intrinsics.at(i)(0) << " " << _sim->get_true_paramters().camera_intrinsics.at(i)(1) << " " << _sim->get_true_paramters().camera_intrinsics.at(i)(2) << " " << _sim->get_true_paramters().camera_intrinsics.at(i)(3) << " ";
                 of_state_gt << _sim->get_true_paramters().camera_intrinsics.at(i)(4) << " " << _sim->get_true_paramters().camera_intrinsics.at(i)(5) << " " << _sim->get_true_paramters().camera_intrinsics.at(i)(6) << " " << _sim->get_true_paramters().camera_intrinsics.at(i)(7) << " ";
@@ -810,7 +810,7 @@ void RosVisualizer::sim_save_total_state_to_file() {
         of_state_std << 0.0 << " ";
     }
     of_state_std.precision(0);
-    of_state_std << state->_options.num_cameras << " ";
+    of_state_std << state->_options.max_cameras << " ";
     of_state_std.precision(6);
 
     // CALIBRATION: Write the camera values to file

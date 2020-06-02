@@ -81,6 +81,7 @@ endif()
 ##################################################
 add_library(ov_msckf_lib SHARED
         src/state/State.cpp
+        src/sim/Simulator.cpp
         src/state/StateHelper.cpp
         src/state/Propagator.cpp
         src/core/VioManager.cpp
@@ -117,10 +118,10 @@ else()
     target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
 
 endif()
-
-
-add_executable(test_sim_meas src/test_sim_meas.cpp)
-target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
-
-add_executable(test_sim_repeat src/test_sim_repeat.cpp)
-target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
+#
+#
+#add_executable(test_sim_meas src/test_sim_meas.cpp)
+#target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
+#
+#add_executable(test_sim_repeat src/test_sim_repeat.cpp)
+#target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})

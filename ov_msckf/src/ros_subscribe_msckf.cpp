@@ -91,10 +91,10 @@ int main(int argc, char** argv) {
     // Create subscribers
     ros::Subscriber subimu = nh.subscribe(topic_imu.c_str(), 9999, callback_inertial);
     ros::Subscriber subcam;
-    if(params.state_options.num_cameras == 1) {
+    if(params.state_options.max_cameras == 1) {
         ROS_INFO("subscribing to: %s", topic_camera0.c_str());
         subcam = nh.subscribe(topic_camera0.c_str(), 1, callback_monocular);
-    } else if(params.state_options.num_cameras == 2) {
+    } else if(params.state_options.max_cameras == 2) {
         ROS_INFO("subscribing to: %s", topic_camera0.c_str());
         ROS_INFO("subscribing to: %s", topic_camera1.c_str());
         sync.registerCallback(boost::bind(&callback_stereo, _1, _2));
