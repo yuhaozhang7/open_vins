@@ -24,7 +24,7 @@
 #include <Eigen/Eigen>
 #include "utils/quat_ops.h"
 #include "utils/colors.h"
-
+#include <vector>
 namespace ov_core {
 
 
