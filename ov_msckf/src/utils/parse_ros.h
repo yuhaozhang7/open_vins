@@ -56,13 +56,13 @@ namespace ov_msckf {
         nh.param<int>("max_slam_in_update", params.state_options.max_slam_in_update, params.state_options.max_slam_in_update);
         nh.param<int>("max_msckf_in_update", params.state_options.max_msckf_in_update, params.state_options.max_msckf_in_update);
         nh.param<int>("max_aruco", params.state_options.max_aruco_features, params.state_options.max_aruco_features);
-        nh.param<int>("max_cameras", params.state_options.max_cameras, params.state_options.max_cameras);
+        nh.param<int>("max_cameras", params.state_options.num_cameras, params.state_options.num_cameras);
         nh.param<double>("dt_slam_delay", params.dt_slam_delay, params.dt_slam_delay);
 
         // Enforce that we have enough cameras to run
-        if(params.state_options.max_cameras < 1) {
+        if(params.state_options.num_cameras < 1) {
             printf(RED "VioManager(): Specified number of cameras needs to be greater than zero\n" RESET);
-            printf(RED "VioManager(): num cameras = %d\n" RESET, params.state_options.max_cameras);
+            printf(RED "VioManager(): num cameras = %d\n" RESET, params.state_options.num_cameras);
             std::exit(EXIT_FAILURE);
         }
 
@@ -186,7 +186,7 @@ namespace ov_msckf {
         //====================================================================================
 
         // Loop through through, and load each of the cameras
-        for(int i=0; i<params.state_options.max_cameras; i++) {
+        for(int i=0; i<params.state_options.num_cameras; i++) {
 
             // If our distortions are fisheye or not!
             bool is_fisheye;

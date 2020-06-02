@@ -1,4 +1,3 @@
-//<<<<<<< HEAD
 /*
  * OpenVINS: An Open Platform for Visual-Inertial Research
  * Copyright (C) 2019 Patrick Geneva
@@ -83,7 +82,7 @@ namespace ov_msckf {
             printf("\t- dt_slam_delay: %.1f\n", dt_slam_delay);
             printf("\t- init_window_time: %.2f\n", init_window_time);
             printf("\t- init_imu_thresh: %.2f\n", init_imu_thresh);
-            printf("\t- record timing?: %d\n", (int) record_timing_information);
+            printf("\t- record timing?: %d\n", (int)record_timing_information);
             printf("\t- record timing filepath: %s\n", record_timing_filepath.c_str());
         }
 
@@ -125,16 +124,16 @@ namespace ov_msckf {
         double calib_camimu_dt = 0.0;
 
         /// Map between camid and camera model (true=fisheye, false=radtan)
-        std::map<size_t, bool> camera_fisheye;
+        std::map<size_t,bool> camera_fisheye;
 
         /// Map between camid and intrinsics. Values depends on the model but each should be a 4x1 vector normally.
-        std::map<size_t, Eigen::VectorXd> camera_intrinsics;
+        std::map<size_t,Eigen::VectorXd> camera_intrinsics;
 
         /// Map between camid and camera extrinsics (q_ItoC, p_IinC).
-        std::map<size_t, Eigen::VectorXd> camera_extrinsics;
+        std::map<size_t,Eigen::VectorXd> camera_extrinsics;
 
         /// Map between camid and the dimensions of incoming images (width/cols, height/rows). This is normally only used during simulation.
-        std::map<size_t, std::pair<int, int>> camera_wh;
+        std::map<size_t,std::pair<int,int>> camera_wh;
 
         /**
          * @brief This function will print out all simulated parameters loaded.
@@ -144,22 +143,17 @@ namespace ov_msckf {
             printf("STATE PARAMETERS:\n");
             printf("\t- gravity: %.3f, %.3f, %.3f\n", gravity(0), gravity(1), gravity(2));
             printf("\t- calib_camimu_dt: %.4f\n", calib_camimu_dt);
-            assert(state_options.max_cameras == (int) camera_fisheye.size());
-            for (int n = 0; n < state_options.max_cameras; n++) {
+            assert(state_options.num_cameras==(int)camera_fisheye.size());
+            for(int n=0; n<state_options.num_cameras; n++) {
                 std::cout << "cam_" << n << "_fisheye:" << camera_fisheye.at(n) << std::endl;
-                std::cout << "cam_" << n << "_wh:" << endl << camera_wh.at(n).first << " x " << camera_wh.at(n).second
-                          << std::endl;
-                std::cout << "cam_" << n << "_intrinsic(0:3):" << endl
-                          << camera_intrinsics.at(n).block(0, 0, 4, 1).transpose() << std::endl;
-                std::cout << "cam_" << n << "_intrinsic(4:7):" << endl
-                          << camera_intrinsics.at(n).block(4, 0, 4, 1).transpose() << std::endl;
-                std::cout << "cam_" << n << "_extrinsic(0:3):" << endl
-                          << camera_extrinsics.at(n).block(0, 0, 4, 1).transpose() << std::endl;
-                std::cout << "cam_" << n << "_extrinsic(4:6):" << endl
-                          << camera_extrinsics.at(n).block(4, 0, 3, 1).transpose() << std::endl;
+                std::cout << "cam_" << n << "_wh:" << endl << camera_wh.at(n).first << " x " << camera_wh.at(n).second << std::endl;
+                std::cout << "cam_" << n << "_intrinsic(0:3):" << endl << camera_intrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
+                std::cout << "cam_" << n << "_intrinsic(4:7):" << endl << camera_intrinsics.at(n).block(4,0,4,1).transpose() << std::endl;
+                std::cout << "cam_" << n << "_extrinsic(0:3):" << endl << camera_extrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
+                std::cout << "cam_" << n << "_extrinsic(4:6):" << endl << camera_extrinsics.at(n).block(4,0,3,1).transpose() << std::endl;
                 Eigen::Matrix4d T_CtoI = Eigen::Matrix4d::Identity();
-                T_CtoI.block(0, 0, 3, 3) = quat_2_Rot(camera_extrinsics.at(n).block(0, 0, 4, 1)).transpose();
-                T_CtoI.block(0, 3, 3, 1) = -T_CtoI.block(0, 0, 3, 3) * camera_extrinsics.at(n).block(4, 0, 3, 1);
+                T_CtoI.block(0,0,3,3) = quat_2_Rot(camera_extrinsics.at(n).block(0,0,4,1)).transpose();
+                T_CtoI.block(0,3,3,1) = -T_CtoI.block(0,0,3,3)*camera_extrinsics.at(n).block(4,0,3,1);
                 std::cout << "T_C" << n << "toI:" << endl << T_CtoI << std::endl << std::endl;
             }
         }
@@ -255,37 +249,10 @@ namespace ov_msckf {
             printf("\t- imu feq: %.2f\n", sim_freq_imu);
         }
 
-        std::string feat_rep_str;
-        double dt_statupdelay;
+
+
     };
+
 }
-//
-//=======
-//#ifndef OPEN_VINS_VIOMANAGEROPTIONS_H
-//#define OPEN_VINS_VIOMANAGEROPTIONS_H
-//#include "../state/StateOptions.h"
-//#include "../../../ov_core/src/feat/FeatureInitializerOptions.h"
-//#include "../state/Propagator.h"
-//#include "../update/UpdaterOptions.h"
-//
-//namespace ov_msckf {
-//    struct VioManagerOptions
-//    {
-//        Eigen::Matrix<double,3,1> gravity;
-//        FeatureInitializerOptions featinit_options;
-//        Propagator::NoiseManager imu_noises;
-//        std::map<double, Eigen::Matrix<double, 17, 1>> gt_states;
-//        // Parameters for our extractor
-//        int num_pts, fast_threshold, grid_x, grid_y, min_px_dist;
-//        double knn_ratio;
-//        bool use_klt, use_aruco, downsize_aruco;
-//        double init_window_time, init_imu_thresh;
-//        UpdaterOptions msckf_options, slam_options, aruco_options;
-//
-
-//>>>>>>> remotes/origin/master
-//    };
-
-//}
 
 #endif //OV_MSCKF_VIOMANAGEROPTIONS_H

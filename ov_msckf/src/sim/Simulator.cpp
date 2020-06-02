@@ -46,9 +46,9 @@ Simulator::Simulator(VioManagerOptions& params_) {
     params.print_simulation();
 
     // Check that the max cameras matches the size of our cam matrices
-    if(params.state_options.max_cameras != (int)params.camera_fisheye.size()) {
+    if(params.state_options.num_cameras != (int)params.camera_fisheye.size()) {
         printf(RED "[SIM]: camera calib size does not match max cameras...\n" RESET);
-        printf(RED "[SIM]: got %d but expected %d max cameras\n" RESET, (int)params.camera_fisheye.size(), params.state_options.max_cameras);
+        printf(RED "[SIM]: got %d but expected %d max cameras\n" RESET, (int)params.camera_fisheye.size(), params.state_options.num_cameras);
         std::exit(EXIT_FAILURE);
     }
 
@@ -110,6 +110,11 @@ Simulator::Simulator(VioManagerOptions& params_) {
     hist_true_bias_accel.push_back(true_bias_accel);
     hist_true_bias_gyro.push_back(true_bias_gyro);
 
+    // Our simulation is running
+    is_running = true;
+
+    //===============================================================
+    //===============================================================
 
     // Load the seeds for the random number generators
     gen_state_init = std::mt19937(params.sim_seed_state_init);
@@ -120,10 +125,11 @@ Simulator::Simulator(VioManagerOptions& params_) {
     gen_meas_imu.seed(params.sim_seed_measurements);
 
     // Create generator for our camera
-    for(int i=0; i<params.state_options.max_cameras; i++) {
+    for(int i=0; i<params.state_options.num_cameras; i++) {
         gen_meas_cams.push_back(std::mt19937(params.sim_seed_measurements));
         gen_meas_cams.at(i).seed(params.sim_seed_measurements);
     }
+
 
     //===============================================================
     //===============================================================
@@ -138,7 +144,7 @@ Simulator::Simulator(VioManagerOptions& params_) {
         params_.calib_camimu_dt += 0.01*w(gen_state_perturb);
 
         // camera intrinsics and extrinsics
-        for(int i=0; i<params_.state_options.max_cameras; i++) {
+        for(int i=0; i<params_.state_options.num_cameras; i++) {
 
             // Camera intrinsic properties (k1, k2, p1, p2)
             for(int r=0; r<4; r++) {
@@ -178,7 +184,7 @@ Simulator::Simulator(VioManagerOptions& params_) {
     // Loop through each camera
     // NOTE: we loop through cameras here so that the feature map for camera 1 will always be the same
     // NOTE: thus when we add more cameras the first camera should get the same measurements
-    for(int i=0; i<params.state_options.max_cameras; i++) {
+    for(int i=0; i<params.state_options.num_cameras; i++) {
 
         // Reset the start time
         double time_synth = spline.get_start_time();
@@ -354,7 +360,7 @@ bool Simulator::get_next_cam(double &time_cam, std::vector<int> &camids, std::ve
     }
 
     // Loop through each camera
-    for(int i=0; i<params.state_options.max_cameras; i++) {
+    for(int i=0; i<params.state_options.num_cameras; i++) {
 
         // Get the uv features for this frame
         std::vector<std::pair<size_t,Eigen::VectorXf>> uvs = project_pointcloud(R_GtoI, p_IinG, i, featmap);
@@ -466,11 +472,11 @@ std::vector<std::pair<size_t,Eigen::VectorXf>> Simulator::project_pointcloud(con
                                                                              int camid, const std::unordered_map<size_t,Eigen::Vector3d> &feats) {
 
     // Assert we have good camera
-    assert(camid < params.state_options.max_cameras);
-    assert((int)params.camera_fisheye.size() == params.state_options.max_cameras);
-    assert((int)params.camera_wh.size() == params.state_options.max_cameras);
-    assert((int)params.camera_intrinsics.size() == params.state_options.max_cameras);
-    assert((int)params.camera_extrinsics.size() == params.state_options.max_cameras);
+    assert(camid < params.state_options.num_cameras);
+    assert((int)params.camera_fisheye.size() == params.state_options.num_cameras);
+    assert((int)params.camera_wh.size() == params.state_options.num_cameras);
+    assert((int)params.camera_intrinsics.size() == params.state_options.num_cameras);
+    assert((int)params.camera_extrinsics.size() == params.state_options.num_cameras);
 
     // Grab our extrinsic and intrinsic values
     Eigen::Matrix<double,3,3> R_ItoC = quat_2_Rot(params.camera_extrinsics.at(camid).block(0,0,4,1));
@@ -551,11 +557,11 @@ void Simulator::generate_points(const Eigen::Matrix3d &R_GtoI, const Eigen::Vect
                                 int camid, std::unordered_map<size_t,Eigen::Vector3d> &feats, int numpts) {
 
     // Assert we have good camera
-    assert(camid < params.state_options.max_cameras);
-    assert((int)params.camera_fisheye.size() == params.state_options.max_cameras);
-    assert((int)params.camera_wh.size() == params.state_options.max_cameras);
-    assert((int)params.camera_intrinsics.size() == params.state_options.max_cameras);
-    assert((int)params.camera_extrinsics.size() == params.state_options.max_cameras);
+    assert(camid < params.state_options.num_cameras);
+    assert((int)params.camera_fisheye.size() == params.state_options.num_cameras);
+    assert((int)params.camera_wh.size() == params.state_options.num_cameras);
+    assert((int)params.camera_intrinsics.size() == params.state_options.num_cameras);
+    assert((int)params.camera_extrinsics.size() == params.state_options.num_cameras);
 
     // Grab our extrinsic and intrinsic values
     Eigen::Matrix<double,3,3> R_ItoC = quat_2_Rot(params.camera_extrinsics.at(camid).block(0,0,4,1));

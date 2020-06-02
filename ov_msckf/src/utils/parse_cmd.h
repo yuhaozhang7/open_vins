@@ -50,7 +50,7 @@ namespace ov_msckf {
 
         // Main EKF parameters
         app1.add_option("--use_fej", params.state_options.do_fej, "");
-        app1.add_option("--use_imuavg", params.state_options.use_imu_avg, "");
+        app1.add_option("--use_imuavg", params.state_options.imu_avg, "");
         app1.add_option("--use_rk4int", params.state_options.use_rk4_integration, "");
         app1.add_option("--calib_cam_extrinsics", params.state_options.do_calib_camera_pose, "");
         app1.add_option("--calib_cam_intrinsics", params.state_options.do_calib_camera_intrinsics, "");
@@ -60,7 +60,7 @@ namespace ov_msckf {
         app1.add_option("--max_slam_in_update", params.state_options.max_slam_in_update, "");
         app1.add_option("--max_msckf_in_update", params.state_options.max_msckf_in_update, "");
         app1.add_option("--max_aruco", params.state_options.max_aruco_features, "");
-        app1.add_option("--max_cameras", params.state_options.max_cameras, "");
+        app1.add_option("--max_cameras", params.state_options.num_cameras, "");
         app1.add_option("--dt_slam_delay", params.dt_slam_delay, "");
 
         // Read in what representation our feature is
@@ -187,9 +187,9 @@ namespace ov_msckf {
         params.gravity << gravity.at(0), gravity.at(1), gravity.at(2);
 
         // Enforce that we have enough cameras to run
-        if(params.state_options.max_cameras < 1) {
+        if(params.state_options.num_cameras < 1) {
             printf(RED "VioManager(): Specified number of cameras needs to be greater than zero\n" RESET);
-            printf(RED "VioManager(): num cameras = %d\n" RESET, params.state_options.max_cameras);
+            printf(RED "VioManager(): num cameras = %d\n" RESET, params.state_options.num_cameras);
             std::exit(EXIT_FAILURE);
         }
 
@@ -208,7 +208,7 @@ namespace ov_msckf {
         std::vector<std::vector<double>> p_intrinsic;
         std::vector<std::vector<double>> p_extrinsic;
         std::vector<std::vector<int>> p_wh;
-        for(int i=0; i<params.state_options.max_cameras; i++) {
+        for(int i=0; i<params.state_options.num_cameras; i++) {
             p_fish.push_back(false);
             p_intrinsic.push_back({458.654,457.296,367.215,248.375,-0.28340811,0.07395907,0.00019359,1.76187114e-05});
             p_extrinsic.push_back({0,0,0,1,0,0,0});
@@ -227,7 +227,7 @@ namespace ov_msckf {
         }
 
         // Finally load it into our params
-        for(int i=0; i<params.state_options.max_cameras; i++) {
+        for(int i=0; i<params.state_options.num_cameras; i++) {
 
             // Halve if we are doing downsampling
             p_wh.at(i).at(0) /= (params.downsample_cameras) ? 2.0 : 1.0;

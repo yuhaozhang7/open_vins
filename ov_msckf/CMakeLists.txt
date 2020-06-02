@@ -55,16 +55,14 @@ include_directories(
         src
         ${EIGEN3_INCLUDE_DIR}
         ${Boost_INCLUDE_DIRS}
-        ${CORE_INCLUDE_DIR}
-#        ${catkin_INCLUDE_DIRS}
+        ${catkin_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${OpenCV_LIBRARIES}
-        ov_core_lib
-#        ${catkin_LIBRARIES}
+        ${catkin_LIBRARIES}
 )
 
 # If we are not building with ROS then we need to manually link to its headers
@@ -79,9 +77,9 @@ endif()
 ##################################################
 # Make the core library
 ##################################################
-add_library(ov_msckf_lib SHARED
-        src/state/State.cpp
+list(APPEND library_source_files
         src/sim/Simulator.cpp
+        src/state/State.cpp
         src/state/StateHelper.cpp
         src/state/Propagator.cpp
         src/core/VioManager.cpp
@@ -94,6 +92,7 @@ if (catkin_FOUND)
         src/core/RosVisualizer.cpp
     )
 endif()
+add_library(ov_msckf_lib SHARED ${library_source_files})
 target_link_libraries(ov_msckf_lib ${thirdparty_libraries})
 target_include_directories(ov_msckf_lib PUBLIC src)
 

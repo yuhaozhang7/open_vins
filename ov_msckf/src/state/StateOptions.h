@@ -37,7 +37,7 @@ namespace ov_msckf {
         bool do_fej = true;
 
         /// Bool to determine whether or not use imu message averaging
-        bool use_imu_avg = false;
+        bool imu_avg = false;
 
         /// Bool to determine if we should use Rk4 imu integration
         bool use_rk4_integration = true;
@@ -67,7 +67,7 @@ namespace ov_msckf {
         int max_aruco_features = 1024;
 
         /// Number of cameras
-        int max_cameras = 1;
+        int num_cameras = 1;
 
         /// What representation our features are in (msckf features)
         LandmarkRepresentation::Representation feat_rep_msckf = LandmarkRepresentation::Representation::GLOBAL_3D;
@@ -81,7 +81,7 @@ namespace ov_msckf {
         /// Nice print function of what parameters we have loaded
         void print() {
             printf("\t- use_fej: %d\n", do_fej);
-            printf("\t- use_imuavg: %d\n", use_imu_avg);
+            printf("\t- use_imuavg: %d\n", imu_avg);
             printf("\t- use_rk4int: %d\n", use_rk4_integration);
             printf("\t- calib_cam_extrinsics: %d\n", do_calib_camera_pose);
             printf("\t- calib_cam_intrinsics: %d\n", do_calib_camera_intrinsics);
@@ -91,7 +91,7 @@ namespace ov_msckf {
             printf("\t- max_slam_in_update: %d\n", max_slam_in_update);
             printf("\t- max_msckf_in_update: %d\n", max_msckf_in_update);
             printf("\t- max_aruco: %d\n", max_aruco_features);
-            printf("\t- max_cameras: %d\n", max_cameras);
+            printf("\t- max_cameras: %d\n", num_cameras);
             printf("\t- feat_rep_msckf: %s\n", LandmarkRepresentation::as_string(feat_rep_msckf).c_str());
             printf("\t- feat_rep_slam: %s\n", LandmarkRepresentation::as_string(feat_rep_slam).c_str());
             printf("\t- feat_rep_aruco: %s\n", LandmarkRepresentation::as_string(feat_rep_aruco).c_str());

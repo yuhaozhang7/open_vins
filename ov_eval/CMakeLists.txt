@@ -63,14 +63,14 @@ include_directories(
         ${PYTHON_INCLUDE_DIRS}
         /usr/local/lib/python2.7/dist-packages/numpy/core/include
         /usr/local/lib/python2.7/site-packages/numpy/core/include
-#        ${catkin_INCLUDE_DIRS}
+        ${catkin_INCLUDE_DIRS}
 )
 
 # Set link libraries used by all binaries
 list(APPEND thirdparty_libraries
         ${Boost_LIBRARIES}
         ${PYTHON_LIBRARIES}
-#        ${catkin_LIBRARIES}
+        ${catkin_LIBRARIES}
 )
 
 ##################################################
