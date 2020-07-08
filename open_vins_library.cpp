@@ -38,11 +38,9 @@ static std::vector<slambench::outputs::Output *>frame_outputs;
 static slambench::TimeStamp last_frame_timestamp;
 static double time_imu, time_cam, time_cam_buffer;
 Eigen::Matrix<double, 3, 1> gyr_data, acc_data;
-bool imu_ready = false;
 std::vector<bool> grey_ready;
-// ===========================================================
+
 // SLAMBench Sensors
-// ===========================================================
 static std::vector<slambench::io::CameraSensor*> grey_sensors;
 static slambench::io::IMUSensor *IMU_sensor = nullptr;
 
@@ -93,7 +91,6 @@ bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
   slam_settings->addParameter(TypedParameter<int>("min_px_dist", "min_px_dist",     "",    &min_px_dist, &default_min_px_dist));
   slam_settings->addParameter(TypedParameter<double>("knn_ratio", "knn_ratio",     "",    &knn_ratio, &default_knn_ratio));
 
-
   // Update parameters
   slam_settings->addParameter(TypedParameter<double>("up_msckf_sigma_px", "up_msckf_sigma_px",     "",    &up_msckf_sigma_px, &default_up_msckf_sigma_px));
   slam_settings->addParameter(TypedParameter<double>("up_slam_sigma_px", "up_slam_sigma_px",     "",    &up_slam_sigma_px, &default_up_slam_sigma_px));
@@ -106,7 +103,6 @@ bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
 
   slam_settings->addParameter(TypedParameter<std::string>("path_gt", "path_gt", "Path to ground truth poses", &path_gt, &default_path_gt));
 
-
   // If our distortions are fisheye or not!
   for(int i = 0; i < num_cameras; i++)
   {
@@ -116,241 +112,222 @@ bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
     is_fisheye.push_back(temp_is_fisheye);
   }
 
-  return true;
+    return true;
 }
 
 bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
+    // Get sensors
+    slambench::io::CameraSensorFinder sensor_finder;
+    IMU_sensor = (slambench::io::IMUSensor*)slam_settings->get_sensors().GetSensor(slambench::io::IMUSensor::kIMUType);
+    assert(IMU_sensor != nullptr && "Init failed, did not found IMU.");
 
+    grey_sensors = sensor_finder.Find(slam_settings->get_sensors(), {{"camera_type", "grey"}});
+    assert(grey_sensors[0] && "At least one camera needed");
 
-  //=========================================================================
-  // We collect sensors
-  //=========================================================================
-  slambench::io::CameraSensorFinder sensor_finder;
-  IMU_sensor = (slambench::io::IMUSensor*)slam_settings->get_sensors().GetSensor(slambench::io::IMUSensor::kIMUType);
-  assert(IMU_sensor != nullptr && "Init failed, did not found IMU.");
+    for ( auto i = 0; i < num_cameras; i++ )  {
+        options.camera_fisheye.insert({i, is_fisheye[i]});
+        options.camera_wh.insert({i,std::pair<int,int>(grey_sensors[i]->Width,grey_sensors[i]->Height)});
+        Eigen::Matrix<double,8,1> cam_calib;
+        cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensors[i]->Width,
+                     grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
+                     grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
+                     grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
+                     grey_sensors[i]->Distortion[0],
+                     grey_sensors[i]->Distortion[1],
+                     grey_sensors[i]->Distortion[2],
+                     grey_sensors[i]->Distortion[3];
+        options.camera_intrinsics.insert({i,cam_calib});
 
-  grey_sensors = sensor_finder.Find(slam_settings->get_sensors(), {{"camera_type", "grey"}});
-  assert(grey_sensors[0] && "At least one camera needed");
+        //auto vec_TCtoI = matrix_TCtoI_vec.at(i);
+        Eigen::Matrix4d T_CtoI = grey_sensors[i]->Pose.cast<double>();
+        //T_CtoI << vec_TCtoI.at(0), vec_TCtoI.at(1), vec_TCtoI.at(2), vec_TCtoI.at(3),
+        //    vec_TCtoI.at(4), vec_TCtoI.at(5), vec_TCtoI.at(6), vec_TCtoI.at(7),
+        //    vec_TCtoI.at(8), vec_TCtoI.at(9), vec_TCtoI.at(10), vec_TCtoI.at(11),
+        //    vec_TCtoI.at(12), vec_TCtoI.at(13), vec_TCtoI.at(14), vec_TCtoI.at(15);
+        Eigen::Matrix<double, 4, 1> rot_quat = rot_2_quat(T_CtoI.block(0,0,3,3).transpose());
+        Eigen::Matrix<double, 3, 1> tr_quat = T_CtoI.block(0,3,3,1);
+        Eigen::Matrix<double, 7, 1> extrinsics;
+        extrinsics<< rot_quat(0), rot_quat(1), rot_quat(2), rot_quat(3), tr_quat(0), tr_quat(1), tr_quat(2);
+        options.camera_extrinsics.insert({i,extrinsics});
 
-  std::vector<std::vector<double>> matrix_TCtoI_vec;
-  matrix_TCtoI_vec.push_back(std::vector<double>({0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
-                                                  0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
-                                                  -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
-                                                  0.0, 0.0, 0.0, 1.0}));
-  matrix_TCtoI_vec.push_back(std::vector<double>({0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-                                                  0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-                                                  -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-                                                  0.0, 0.0, 0.0, 1.0}));
+        img.push_back(new cv::Mat(grey_sensors[i]->Height, grey_sensors[i]->Width,CV_8UC1));
+        img_buffers.push_back(new cv::Mat());
+        camera_input_s.push_back(make_sb_uint2(grey_sensors[i]->Width, grey_sensors[i]->Height));
+        grey_ready.push_back(false);
 
-  for ( size_t i = 0; i < num_cameras; i++ )  {
-    options.camera_fisheye.insert({i, is_fisheye[i]});
-    options.camera_wh.insert({i,std::pair<int,int>(grey_sensors[i]->Width,grey_sensors[i]->Height)});
-    Eigen::Matrix<double,8,1> cam_calib;
-    cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensors[i]->Width,
-        grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
-        grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
-        grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
-        grey_sensors[i]->RadialTangentialDistortion[0],
-        grey_sensors[i]->RadialTangentialDistortion[1],
-        grey_sensors[i]->RadialTangentialDistortion[2],
-        grey_sensors[i]->RadialTangentialDistortion[3];
-    options.camera_intrinsics.insert({i,cam_calib});
+        auto frame_out = new slambench::outputs::Output("Frame_"+to_string(i), slambench::values::VT_FRAME);
+        frame_out->SetKeepOnlyMostRecent(true);
+        slam_settings->GetOutputManager().RegisterOutput(frame_out);
+        frame_outputs.push_back(frame_out);
+    }
+    // TODO: delay for both cameras when using stereo?
+    options.calib_camimu_dt = calib_camimu_dt != 0.0 ? calib_camimu_dt : grey_sensors[0]->Delay;
 
-    auto vec_TCtoI = matrix_TCtoI_vec.at(i);
-    Eigen::Matrix4d T_CtoI;
-    T_CtoI << vec_TCtoI.at(0), vec_TCtoI.at(1), vec_TCtoI.at(2), vec_TCtoI.at(3),
-        vec_TCtoI.at(4), vec_TCtoI.at(5), vec_TCtoI.at(6), vec_TCtoI.at(7),
-        vec_TCtoI.at(8), vec_TCtoI.at(9), vec_TCtoI.at(10), vec_TCtoI.at(11),
-        vec_TCtoI.at(12), vec_TCtoI.at(13), vec_TCtoI.at(14), vec_TCtoI.at(15);
-    Eigen::Matrix<double, 4, 1> rot_quat = rot_2_quat(T_CtoI.block(0,0,3,3).transpose());
-    Eigen::Matrix<double, 3, 1> tr_quat = T_CtoI.block(0,3,3,1);
-    Eigen::Matrix<double, 7, 1> extrinsics;
-    extrinsics<< rot_quat(0), rot_quat(1), rot_quat(2), rot_quat(3), tr_quat(0), tr_quat(1), tr_quat(2);
-    options.camera_extrinsics.insert({i,extrinsics});
+    options.state_options.feat_rep_slam = ov_type::LandmarkRepresentation::from_string(feat_representation);
+    options.state_options.feat_rep_aruco = options.state_options.feat_rep_slam;
+    options.state_options.do_fej = use_fej;
+    options.state_options.imu_avg = use_imu_avg;
+    options.state_options.use_rk4_integration = use_rk4_integration;
+    options.state_options.do_calib_camera_pose = do_calib_camera_pose;
+    options.state_options.do_calib_camera_intrinsics = do_calib_camera_intrinsics;
+    options.state_options.do_calib_camera_timeoffset = do_calib_camera_timeoffset;
+    options.state_options.max_clone_size = max_clones;
+    options.state_options.max_slam_features = max_slam;
+    options.state_options.max_aruco_features = max_aruco;
+    options.state_options.num_cameras = num_cameras;
+    options.state_options.max_slam_in_update = max_slam_in_update;
+    options.state_options.max_msckf_in_update = max_msckf_in_update;
+    options.dt_slam_delay = dt_slam_delay;
 
-    img.push_back(new cv::Mat ( grey_sensors[i]->Height, grey_sensors[i]->Width, CV_8UC1));
-    img_buffers.push_back(new cv::Mat());
-    camera_input_s.push_back(make_sb_uint2(grey_sensors[i]->Width,grey_sensors[i]->Height));
-    grey_ready.push_back(false);
+    options.use_klt = use_klt;
+    options.use_aruco = use_aruco;
+    options.num_pts = num_pts;
+    options.fast_threshold = fast_threshold;
+    options.grid_x = grid_x;
+    options.grid_y = grid_y;
+    options.min_px_dist = min_px_dist;
+    options.knn_ratio = knn_ratio;
+    options.downsize_aruco = downsize_aruco;
+    options.min_px_dist = min_px_dist;
 
-    auto frame_out = new slambench::outputs::Output("Frame_"+to_string(i), slambench::values::VT_FRAME);
-    frame_out->SetKeepOnlyMostRecent(true);
-    slam_settings->GetOutputManager().RegisterOutput(frame_out);
-    frame_outputs.push_back(frame_out);
-  }
+    options.featinit_options.max_runs = fi_max_runs;
+    options.featinit_options.init_lamda = fi_init_lamda;
+    options.featinit_options.max_lamda = fi_max_lamda;
+    options.featinit_options.min_dx = fi_min_dx;
+    options.featinit_options.min_dcost = fi_min_dcost;
+    options.featinit_options.lam_mult = fi_lam_mult;
+    options.featinit_options.min_dist = fi_min_dist;
+    options.featinit_options.max_dist = fi_max_dist;
+    options.featinit_options.max_baseline = fi_max_baseline;
+    options.featinit_options.max_cond_number = fi_max_cond_number;
+    //    parameters.imu.g_max  = IMU_sensor->GyroscopeSaturation;
+    //    parameters.imu.a_max  = IMU_sensor->AcceleratorSaturation;
+    // Inertial sensor noise values and initial parameters
+    options.imu_noises.sigma_w = IMU_sensor->GyroscopeNoiseDensity;
+    options.imu_noises.sigma_a = IMU_sensor->AcceleratorNoiseDensity;
+    options.imu_noises.sigma_wb  = IMU_sensor->GyroscopeBiasDiffusion;//gyroscope_random_walk
+    options.imu_noises.sigma_ab = IMU_sensor->AcceleratorBiasDiffusion;//accelerometer_random_walk
+    options.init_window_time = init_window_time;
+    options.init_imu_thresh = init_imu_thresh;
+    options.gravity << vec_gravity_default[0],vec_gravity_default[1],vec_gravity_default[2];
 
-  options.state_options.feat_rep_slam = ov_type::LandmarkRepresentation::from_string(feat_representation);
-  options.state_options.feat_rep_aruco = options.state_options.feat_rep_slam;
-  options.state_options.do_fej = use_fej;
-  options.state_options.imu_avg = use_imu_avg;
-  options.state_options.use_rk4_integration = use_rk4_integration;
-  options.state_options.do_calib_camera_pose = do_calib_camera_pose;
-  options.state_options.do_calib_camera_intrinsics = do_calib_camera_intrinsics;
-  options.state_options.do_calib_camera_timeoffset = do_calib_camera_timeoffset;
-  options.state_options.max_clone_size = max_clones;
-  options.state_options.max_slam_features = max_slam;
-  options.state_options.max_aruco_features = max_aruco;
-  options.state_options.num_cameras = num_cameras;
-  options.state_options.max_slam_in_update = max_slam_in_update;
-  options.state_options.max_msckf_in_update = max_msckf_in_update;
-  options.dt_slam_delay = dt_slam_delay;
+    sys = new ov_msckf::VioManager(options);
 
-  options.use_klt = use_klt;
-  options.use_aruco = use_aruco;
-  options.num_pts = num_pts;
-  options.fast_threshold = fast_threshold;
-  options.grid_x = grid_x;
-  options.grid_y = grid_y;
-  options.min_px_dist = min_px_dist;
-  options.knn_ratio = knn_ratio;
-  options.downsize_aruco = downsize_aruco;
-  options.min_px_dist = min_px_dist;
+    if (!path_gt.empty()) {
+        DatasetReader::load_gt_file(path_gt, gt_states);
+    }
 
-  options.featinit_options.max_runs = fi_max_runs;
-  options.featinit_options.init_lamda = fi_init_lamda;
-  options.featinit_options.max_lamda = fi_max_lamda;
-  options.featinit_options.min_dx = fi_min_dx;
-  options.featinit_options.min_dcost = fi_min_dcost;
-  options.featinit_options.lam_mult = fi_lam_mult;
-  options.featinit_options.min_dist = fi_min_dist;
-  options.featinit_options.max_dist = fi_max_dist;
-  options.featinit_options.max_baseline = fi_max_baseline;
-  options.featinit_options.max_cond_number = fi_max_cond_number;
-  //    parameters.imu.g_max  = IMU_sensor->GyroscopeSaturation;
-  //    parameters.imu.a_max  = IMU_sensor->AcceleratorSaturation;
-  // Inertial sensor noise values and initial parameters
-  options.imu_noises.sigma_w = IMU_sensor->GyroscopeNoiseDensity;
-  options.imu_noises.sigma_a = IMU_sensor->AcceleratorNoiseDensity;
-  options.imu_noises.sigma_wb  = IMU_sensor->GyroscopeBiasDiffusion;//gyroscope_random_walk
-  options.imu_noises.sigma_ab = IMU_sensor->AcceleratorBiasDiffusion;//accelerometer_random_walk
-  options.calib_camimu_dt = calib_camimu_dt;
-  options.init_window_time = init_window_time;
-  options.init_imu_thresh = init_imu_thresh;
-  options.gravity << vec_gravity_default[0],vec_gravity_default[1],vec_gravity_default[2];
+    pose_output = new slambench::outputs::Output("Pose", slambench::values::VT_POSE, true);
+    slam_settings->GetOutputManager().RegisterOutput(pose_output);
 
-  sys = new ov_msckf::VioManager(options);
-
-  if (!path_gt.empty()) {
-    DatasetReader::load_gt_file(path_gt, gt_states);
-  }
-
-  pose_output = new slambench::outputs::Output("Pose", slambench::values::VT_POSE, true);
-  slam_settings->GetOutputManager().RegisterOutput(pose_output);
-
-  return true;
+    return true;
 
 }
 
 bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
-  assert(s != nullptr);
+    assert(s != nullptr);
 
-  if(s->FrameSensor == IMU_sensor) {
-    float* frame_data = (float*)s->GetData();
-    time_imu = s->Timestamp.ToS();
-    gyr_data << frame_data[0], frame_data[1], frame_data[2];
-    acc_data << frame_data[3], frame_data[4], frame_data[5];
-    // IMU data needs to be sent as soon as it arrives, don't wait for greyscale frames
-    sys->feed_measurement_imu(time_imu, gyr_data, acc_data);
-  }
-  else
-  {
-    for(size_t i = 0; i < grey_sensors.size(); i++)
-    {
-      if(s->FrameSensor == grey_sensors[i]) {
-        memcpy(img[i]->data, s->GetData(), s->GetSize());
-        time_cam = s->Timestamp.ToS();
-        if(img_buffers[i]->rows == 0)
-        {
-          time_cam_buffer = time_cam;
-          *img_buffers[i] = img[i]->clone();
-        }
-        grey_ready[i] = true;
-        s->FreeData();
-        break;
-      }
+    if(s->FrameSensor == IMU_sensor) {
+        float* frame_data = (float*)s->GetData();
+        time_imu = s->Timestamp.ToS();
+        gyr_data << frame_data[0], frame_data[1], frame_data[2];
+        acc_data << frame_data[3], frame_data[4], frame_data[5];
+        // IMU data needs to be sent as soon as it arrives, don't wait for greyscale frames
+        sys->feed_measurement_imu(time_imu, gyr_data, acc_data);
     }
-  }
+    else
+    {
+        for(size_t i = 0; i < grey_sensors.size(); i++)
+        {
+            if(s->FrameSensor == grey_sensors[i]) {
+                memcpy(img[i]->data, s->GetData(), s->GetSize());
+                time_cam = s->Timestamp.ToS();
+                if(img_buffers[i]->rows == 0)
+                {
+                    time_cam_buffer = time_cam;
+                    *img_buffers[i] = img[i]->clone();
+                }
+                grey_ready[i] = true;
+                s->FreeData();
+                break;
+            }
+        }
+    }
 
-  last_frame_timestamp = s->Timestamp;
-  for(bool ready : grey_ready)
-    if(!ready)
-      return false;
-  return true;
+    last_frame_timestamp = s->Timestamp;
+    for(bool ready : grey_ready)
+        if(!ready)
+            return false;
+    return true;
 }
 
 bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
 
-  // monocular
-  if (grey_ready.size() == 1 and grey_ready[0]) {
-    sys->feed_measurement_monocular(time_cam_buffer, *img_buffers[0], 0);
-    grey_ready[0] = false;
-    *img_buffers[0] = img[0]->clone();
-  }
-  else if (grey_ready.size() == 2 and grey_ready[0] and grey_ready[1]) {
-    // process once we have initialized with the GT
-    Eigen::Matrix<double, 17, 1> imustate;
-    if(!gt_states.empty() and !sys->initialized() and DatasetReader::get_gt_state(time_cam_buffer,imustate,gt_states)) {
-      //biases are pretty bad normally, so zero them
-      //imustate.block(11,0,6,1).setZero();
-      sys->initialize_with_gt(imustate);
+    // monocular
+    if (grey_ready.size() == 1 and grey_ready[0]) {
+        sys->feed_measurement_monocular(time_cam_buffer, *img_buffers[0], 0);
+        grey_ready[0] = false;
+        *img_buffers[0] = img[0]->clone();
     }
-    if(gt_states.empty() || sys->initialized()) {
-      sys->feed_measurement_stereo(time_cam_buffer, *img_buffers[0], *img_buffers[1], 0, 1);
+    else if (grey_ready.size() == 2 and grey_ready[0] and grey_ready[1]) {
+        // process once we have initialized with the GT
+        Eigen::Matrix<double, 17, 1> imustate;
+        if(!gt_states.empty() and !sys->initialized() and DatasetReader::get_gt_state(time_cam_buffer,imustate,gt_states)) {
+            //biases are pretty bad normally, so zero them
+            //imustate.block(11,0,6,1).setZero();
+            sys->initialize_with_gt(imustate);
+        }
+        if(gt_states.empty() || sys->initialized()) {
+            sys->feed_measurement_stereo(time_cam_buffer, *img_buffers[0], *img_buffers[1], 0, 1);
+        }
+        for(int i = 0; i < grey_ready.size();i++)
+        {
+            *img_buffers[i] = img[i]->clone();
+            grey_ready[i] = false;
+        }
     }
-    for(int i = 0; i < grey_ready.size();i++)
-    {
-      *img_buffers[i] = img[i]->clone();
-      grey_ready[i] = false;
-    }
-  }
-  time_cam_buffer = time_cam;
-  return true;
+    time_cam_buffer = time_cam;
+    return true;
 }
 
-
 bool sb_clean_slam_system() {
-  delete sys;
-  delete pose_output;
-  for(auto sensor : grey_sensors)
-    delete sensor;
-  delete IMU_sensor;
-  for(auto output : frame_outputs)
-    delete output;
-  return true;
+    delete sys;
+    delete pose_output;
+    for(auto sensor : grey_sensors)
+        delete sensor;
+    delete IMU_sensor;
+    for(auto output : frame_outputs)
+        delete output;
+    return true;
 }
 
 bool sb_update_outputs(SLAMBenchLibraryHelper *lib, const slambench::TimeStamp *latest_output) {
-  (void)lib;
+    (void)lib;
 
-  // Send pose
-  if(pose_output->IsActive()) {
-    auto imu_rot = sys->get_state()->imu()->Rot().transpose();
-    auto imu_pos = sys->get_state()->imu()->pos();
+    // Send pose
+    if(pose_output->IsActive()) {
+        auto imu_rot = sys->get_state()->imu()->Rot().transpose();
+        auto imu_pos = sys->get_state()->imu()->pos();
 
-    // Get the current pose as an eigen matrix
-    Eigen::Matrix4f matrix = Eigen::Matrix4f::Identity();
-    matrix.block<3,3>(0,0) = imu_rot.cast<float>();
-    matrix.block<3,1>(0,3) = imu_pos.cast<float>();
+        // Get the current pose as an eigen matrix
+        Eigen::Matrix4f matrix = Eigen::Matrix4f::Identity();
+        matrix.block<3,3>(0,0) = imu_rot.cast<float>();
+        matrix.block<3,1>(0,3) = imu_pos.cast<float>();
 
-    std::cout<< "pose:" << matrix << std::endl;
-    std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
-    pose_output->AddPoint(*latest_output, new slambench::values::PoseValue(matrix));
-  }
-  // Display greyscale frames
-  for(int i=0; i < frame_outputs.size(); i++)
-    if(frame_outputs[i]->IsActive() && img[i]) {
-
-      std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
-      frame_outputs[i]->AddPoint(*latest_output, new slambench::values::FrameValue(camera_input_s[i].x, camera_input_s[i].y,
-                                                                                   slambench::io::pixelformat::G_I_8,
-                                                                                   (void *) (img[i]->data)));
-
+        std::cout<< "pose:" << matrix << std::endl;
+        std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
+        pose_output->AddPoint(*latest_output, new slambench::values::PoseValue(matrix));
     }
+    // Display greyscale frames
+    for(int i=0; i < frame_outputs.size(); i++)
+        if(frame_outputs[i]->IsActive() && img[i]) {
 
+            std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
+            frame_outputs[i]->AddPoint(*latest_output, new slambench::values::FrameValue(camera_input_s[i].x, camera_input_s[i].y,
+                                                                                         slambench::io::pixelformat::G_I_8,
+                                                                                         (void *) (img[i]->data)));
 
-  return true;
+        }
+
+    return true;
 }
-
-
-
-
