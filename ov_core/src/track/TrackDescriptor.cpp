@@ -81,7 +81,7 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
 
         // Loop through all left matches, and find the old "train" id
         int idll = -1;
-        for(size_t j=0; j<matches_ll.size(); j++){
+        for(size_t j=0; j<matches_ll.size(); j++) {
             if(matches_ll[j].trainIdx == (int)i) {
                 idll = matches_ll[j].queryIdx;
             }
@@ -119,7 +119,7 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
     }
 
     // Debug info
-    std::cout<<"LtoL = " << (int)matches_ll.size() << "| good = " << (int)good_left.size() << " | fromlast = " << num_tracklast << std::endl;
+    //printf("LtoL = %d | good = %d | fromlast = %d\n",(int)matches_ll.size(),(int)good_left.size(),num_tracklast);
 
 
     // Move forward in time
@@ -130,13 +130,11 @@ void TrackDescriptor::feed_monocular(double timestamp, cv::Mat &imgin, size_t ca
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
     // Our timing information
-    std::cout<<"[TIME-KLT]: " << (rT2-rT1).total_microseconds() * 1e-6 << " seconds for detection" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT3-rT2).total_microseconds() * 1e-6 << " seconds for matching" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT4-rT3).total_microseconds() * 1e-6 << " seconds for merging" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT5-rT4).total_microseconds() * 1e-6 << " seconds for feature DB update (" << (int)good_left.size() << "features)" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT5-rT1).total_microseconds() * 1e-6 << " seconds for total" << std::endl;
-
-
+    //printf("[TIME-DESC]: %.4f seconds for detection\n",(rT2-rT1).total_microseconds() * 1e-6);
+    //printf("[TIME-DESC]: %.4f seconds for matching\n",(rT3-rT2).total_microseconds() * 1e-6);
+    //printf("[TIME-DESC]: %.4f seconds for merging\n",(rT4-rT3).total_microseconds() * 1e-6);
+    //printf("[TIME-DESC]: %.4f seconds for feature DB update (%d features)\n",(rT5-rT4).total_microseconds() * 1e-6, (int)good_left.size());
+    //printf("[TIME-DESC]: %.4f seconds for total\n",(rT5-rT1).total_microseconds() * 1e-6);
 }
 
 void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_rightin, size_t cam_id_left, size_t cam_id_right) {
@@ -217,7 +215,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
 
         // Loop through all left matches, and find the old "train" id
         int idll = -1;
-        for(size_t j=0; j<matches_ll.size(); j++){
+        for(size_t j=0; j<matches_ll.size(); j++) {
             if(matches_ll[j].trainIdx == (int)i) {
                 idll = matches_ll[j].queryIdx;
             }
@@ -225,7 +223,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
 
         // Loop through all left matches, and find the old "train" id
         int idrr = -1;
-        for(size_t j=0; j<matches_rr.size(); j++){
+        for(size_t j=0; j<matches_rr.size(); j++) {
             if(matches_rr[j].trainIdx == (int)i) {
                 idrr = matches_rr[j].queryIdx;
             }
@@ -278,7 +276,8 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
 
 
     // Debug info
-    std::cout<<"LtoL = " << (int)matches_ll.size() << "| good = " << (int)good_left.size() << " | from last = " << num_tracklast << std::endl;
+    //printf("LtoL = %d | RtoR = %d | LtoR = %d | good = %d | fromlast = %d\n", (int)matches_ll.size(),
+    //       (int)matches_rr.size(),(int)ids_left_new.size(),(int)good_left.size(),num_tracklast);
 
     // Move forward in time
     img_last[cam_id_left] = img_left.clone();
@@ -292,12 +291,11 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
     // Our timing information
-    std::cout<<"[TIME-KLT]: " << (rT2-rT1).total_microseconds() * 1e-6 << " seconds for detection" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT3-rT2).total_microseconds() * 1e-6 << " seconds for matching" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT4-rT3).total_microseconds() * 1e-6 << " seconds for merging" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT5-rT4).total_microseconds() * 1e-6 << " seconds for feature DB update (" << (int)good_left.size() << "features)" << std::endl;
-    std::cout<<"[TIME-KLT]: " << (rT5-rT1).total_microseconds() * 1e-6 << " seconds for total" << std::endl;
-
+    //printf("[TIME-DESC]: %.4f seconds for detection\n",(rT2-rT1).total_microseconds() * 1e-6);
+    //printf("[TIME-DESC]: %.4f seconds for matching\n",(rT3-rT2).total_microseconds() * 1e-6);
+    //printf("[TIME-DESC]: %.4f seconds for merging\n",(rT4-rT3).total_microseconds() * 1e-6);
+    //printf("[TIME-DESC]: %.4f seconds for feature DB update (%d features)\n",(rT5-rT4).total_microseconds() * 1e-6, (int)good_left.size());
+    //printf("[TIME-DESC]: %.4f seconds for total\n",(rT5-rT1).total_microseconds() * 1e-6);
 }
 
 void TrackDescriptor::perform_detection_monocular(const cv::Mat& img0, std::vector<cv::KeyPoint>& pts0,

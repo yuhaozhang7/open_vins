@@ -21,10 +21,10 @@
 #ifndef OV_CORE_INERTIALINITIALIZER_H
 #define OV_CORE_INERTIALINITIALIZER_H
 
-
 #include <Eigen/Eigen>
 #include "utils/quat_ops.h"
-
+#include "utils/colors.h"
+#include <vector>
 namespace ov_core {
 
 
@@ -35,6 +35,14 @@ namespace ov_core {
      * This class has a series of functions that can be used to initialize your system.
      * Right now we have our implementation that assumes that the imu starts from standing still.
      * In the future we plan to add support for structure-from-motion dynamic initialization.
+     *
+     * To initialize from standstill:
+     * 1. Collect all inertial measurements
+     * 2. See if within the last window there was a jump in acceleration
+     * 3. If the jump is past our threshold we should init (i.e. we have started moving)
+     * 4. Use the *previous* window, which should have been stationary to initialize orientation
+     * 5. Return a roll and pitch aligned with gravity and biases.
+     *
      */
     class InertialInitializer {
 
@@ -84,16 +92,21 @@ namespace ov_core {
          * If we have then we will use the period of time before this jump to initialize the state.
          * This assumes that our imu is sitting still and is not moving (so this would fail if we are experiencing constant acceleration).
          *
+         * In the case that we do not wait for a jump (i.e. `wait_for_jerk` is false), then the system will try to initialize as soon as possible.
+         * This is only recommended if you have zero velocity update enabled to handle the stationary cases.
+         * To initialize in this case, we need to have the average angular variance be below the set threshold (i.e. we need to be stationary).
+         *
          * @param[out] time0 Timestamp that the returned state is at
          * @param[out] q_GtoI0 Orientation at initialization
          * @param[out] b_w0 Gyro bias at initialization
          * @param[out] v_I0inG Velocity at initialization
          * @param[out] b_a0 Acceleration bias at initialization
          * @param[out] p_I0inG Position at initialization
+         * @param wait_for_jerk If true we will wait for a "jerk"
          * @return True if we have successfully initialized our system
          */
         bool initialize_with_imu(double &time0, Eigen::Matrix<double,4,1> &q_GtoI0, Eigen::Matrix<double,3,1> &b_w0,
-                                 Eigen::Matrix<double,3,1> &v_I0inG, Eigen::Matrix<double,3,1> &b_a0, Eigen::Matrix<double,3,1> &p_I0inG);
+                                 Eigen::Matrix<double,3,1> &v_I0inG, Eigen::Matrix<double,3,1> &b_a0, Eigen::Matrix<double,3,1> &p_I0inG, bool wait_for_jerk=true);
 
 
     protected:

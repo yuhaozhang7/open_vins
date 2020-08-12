@@ -38,11 +38,9 @@ static std::vector<slambench::outputs::Output *>frame_outputs;
 static slambench::TimeStamp last_frame_timestamp;
 static double time_imu, time_cam, time_cam_buffer;
 Eigen::Matrix<double, 3, 1> gyr_data, acc_data;
-bool imu_ready = false;
 std::vector<bool> grey_ready;
-// ===========================================================
+
 // SLAMBench Sensors
-// ===========================================================
 static std::vector<slambench::io::CameraSensor*> grey_sensors;
 static slambench::io::IMUSensor *IMU_sensor = nullptr;
 
@@ -51,78 +49,74 @@ static ov_msckf::VioManager *sys;
 
 bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
 
-    // State options
-    slam_settings->addParameter(TypedParameter<bool>("use_fej", "use_fej",     "fej",    &use_fej, &default_use_fej));
-    slam_settings->addParameter(TypedParameter<bool>("use_imu_avg", "use_imu_avg",     "Use IMU averaging",    &use_imu_avg, &default_use_imu_avg));
-    slam_settings->addParameter(TypedParameter<bool>("use_rk4int", "use_rk4inttegration",     "",    &use_rk4_integration, &default_use_rk4_integration));
-    slam_settings->addParameter(TypedParameter<bool>("use_stereo", "use_stereo",     "",    &use_stereo, &default_use_stereo));
-    slam_settings->addParameter(TypedParameter<bool>("calib_cam_extrinsics", "calib_cam_extrinsics",     "",    &do_calib_camera_pose, &default_do_calib_camera_pose));
-    slam_settings->addParameter(TypedParameter<bool>("calib_cam_intrinsics", "calib_cam_intrinsics",     "",    &do_calib_camera_intrinsics, &default_do_calib_camera_intrinsics));
-    slam_settings->addParameter(TypedParameter<bool>("calib_cam_timeoffset", "calib_cam_timeoffset",    "",    &do_calib_camera_timeoffset, &default_do_calib_camera_timeoffset));
-    slam_settings->addParameter(TypedParameter<int>("max_clones", "max_clones",     "",    &max_clones, &default_max_clones));
-    slam_settings->addParameter(TypedParameter<int>("max_slam", "max_slam",     "",    &max_slam, &default_max_slam));
-    slam_settings->addParameter(TypedParameter<int>("max_aruco", "max_aruco",     "",    &max_aruco, &default_max_aruco));
-    slam_settings->addParameter(TypedParameter<int>("max_cameras", "max_cameras",     "",    &max_cameras, &default_max_cameras));
-    slam_settings->addParameter(TypedParameter<double>("dt_slam_delay", "dt_slam_delay",     "",    &dt_slam_delay, &default_dt_slam_delay));
-    slam_settings->addParameter(TypedParameter<double>("calib_camimu_dt", "calib_camimu_dt",     "",    &calib_camimu_dt, &default_calib_camimu_dt));
-    slam_settings->addParameter(TypedParameter<std::string>("fr", "feat_representation",     "",    &feat_representation, &default_feat_representation));
+  // State options
+  slam_settings->addParameter(TypedParameter<bool>("use_fej", "use_fej",     "fej",    &use_fej, &default_use_fej));
+  slam_settings->addParameter(TypedParameter<bool>("use_imu_avg", "use_imu_avg",     "Use IMU averaging",    &use_imu_avg, &default_use_imu_avg));
+  slam_settings->addParameter(TypedParameter<bool>("use_rk4int", "use_rk4inttegration",     "",    &use_rk4_integration, &default_use_rk4_integration));
+  slam_settings->addParameter(TypedParameter<bool>("use_stereo", "use_stereo",     "",    &use_stereo, &default_use_stereo));
+  slam_settings->addParameter(TypedParameter<bool>("calib_cam_extrinsics", "calib_cam_extrinsics",     "",    &do_calib_camera_pose, &default_do_calib_camera_pose));
+  slam_settings->addParameter(TypedParameter<bool>("calib_cam_intrinsics", "calib_cam_intrinsics",     "",    &do_calib_camera_intrinsics, &default_do_calib_camera_intrinsics));
+  slam_settings->addParameter(TypedParameter<bool>("calib_cam_timeoffset", "calib_cam_timeoffset",    "",    &do_calib_camera_timeoffset, &default_do_calib_camera_timeoffset));
+  slam_settings->addParameter(TypedParameter<int>("max_clones", "max_clones",     "",    &max_clones, &default_max_clones));
+  slam_settings->addParameter(TypedParameter<int>("max_slam", "max_slam",     "",    &max_slam, &default_max_slam));
+  slam_settings->addParameter(TypedParameter<int>("max_aruco", "max_aruco",     "",    &max_aruco, &default_max_aruco));
+  slam_settings->addParameter(TypedParameter<int>("num_cameras", "num_cameras",     "",    &num_cameras, &default_num_cameras));
+  slam_settings->addParameter(TypedParameter<double>("dt_slam_delay", "dt_slam_delay",     "",    &dt_slam_delay, &default_dt_slam_delay));
+  slam_settings->addParameter(TypedParameter<double>("calib_camimu_dt", "calib_camimu_dt",     "",    &calib_camimu_dt, &default_calib_camimu_dt));
+  slam_settings->addParameter(TypedParameter<std::string>("fr", "feat_representation",     "",    &feat_representation, &default_feat_representation));
 
-    // Feature initializer options
-    slam_settings->addParameter(TypedParameter<int>("fi_max_runs", "fi_max_runs",     "fi_max_runs",    &fi_max_runs, &default_fi_max_runs));
-    slam_settings->addParameter(TypedParameter<double>("fi_init_lamda", "fi_init_lamda",     "",    &fi_init_lamda, &default_fi_init_lamda));
-    slam_settings->addParameter(TypedParameter<double>("fi_min_dx", "fi_min_dx",     "",    &fi_min_dx, &default_fi_min_dx));
-    slam_settings->addParameter(TypedParameter<double>("fi_max_lamda", "fi_max_lamda",     "",    &fi_max_lamda, &default_fi_max_lamda));
-    slam_settings->addParameter(TypedParameter<double>("fi_min_dcost", "fi_min_dcost",     "",    &fi_min_dcost, &default_fi_min_dcost));
-    slam_settings->addParameter(TypedParameter<double>("fi_lam_mult", "fi_lam_mult",     "",    &fi_lam_mult, &default_fi_lam_mult));
-    slam_settings->addParameter(TypedParameter<double>("fi_min_dist", "fi_min_dist",     "",    &fi_min_dist, &default_fi_min_dist));
-    slam_settings->addParameter(TypedParameter<double>("fi_max_dist", "fi_max_dist",     "",    &fi_max_dist, &default_fi_max_dist));
-    slam_settings->addParameter(TypedParameter<double>("fi_max_baseline", "fi_max_baseline",     "",    &fi_max_baseline, &default_fi_max_baseline));
-    slam_settings->addParameter(TypedParameter<double>("fi_max_cond_number", "fi_max_cond_number",     "",    &fi_max_cond_number, &default_fi_max_cond_number));
+  // Feature initializer options
+  slam_settings->addParameter(TypedParameter<int>("fi_max_runs", "fi_max_runs",     "fi_max_runs",    &fi_max_runs, &default_fi_max_runs));
+  slam_settings->addParameter(TypedParameter<double>("fi_init_lamda", "fi_init_lamda",     "",    &fi_init_lamda, &default_fi_init_lamda));
+  slam_settings->addParameter(TypedParameter<double>("fi_min_dx", "fi_min_dx",     "",    &fi_min_dx, &default_fi_min_dx));
+  slam_settings->addParameter(TypedParameter<double>("fi_max_lamda", "fi_max_lamda",     "",    &fi_max_lamda, &default_fi_max_lamda));
+  slam_settings->addParameter(TypedParameter<double>("fi_min_dcost", "fi_min_dcost",     "",    &fi_min_dcost, &default_fi_min_dcost));
+  slam_settings->addParameter(TypedParameter<double>("fi_lam_mult", "fi_lam_mult",     "",    &fi_lam_mult, &default_fi_lam_mult));
+  slam_settings->addParameter(TypedParameter<double>("fi_min_dist", "fi_min_dist",     "",    &fi_min_dist, &default_fi_min_dist));
+  slam_settings->addParameter(TypedParameter<double>("fi_max_dist", "fi_max_dist",     "",    &fi_max_dist, &default_fi_max_dist));
+  slam_settings->addParameter(TypedParameter<double>("fi_max_baseline", "fi_max_baseline",     "",    &fi_max_baseline, &default_fi_max_baseline));
+  slam_settings->addParameter(TypedParameter<double>("fi_max_cond_number", "fi_max_cond_number",     "",    &fi_max_cond_number, &default_fi_max_cond_number));
 
-    slam_settings->addParameter(TypedParameter<double>("init_window_time", "init_window_time",     "",    &init_window_time, &default_init_window_time));
-    slam_settings->addParameter(TypedParameter<double>("init_imu_thresh", "init_imu_thresh",     "",    &init_imu_thresh, &default_init_imu_thresh));
+  slam_settings->addParameter(TypedParameter<double>("init_window_time", "init_window_time",     "",    &init_window_time, &default_init_window_time));
+  slam_settings->addParameter(TypedParameter<double>("init_imu_thresh", "init_imu_thresh",     "",    &init_imu_thresh, &default_init_imu_thresh));
 
-    // Extractor options
-    slam_settings->addParameter(TypedParameter<bool>("use_klt", "use_klt",     "",    &use_klt, &default_use_klt));
-    slam_settings->addParameter(TypedParameter<bool>("use_aruco", "use_aruco",     "",    &use_aruco, &default_use_aruco));
-    slam_settings->addParameter(TypedParameter<bool>("ds_aruco", "downsize_aruco",     "",    &downsize_aruco, &default_downsize_aruco));
-    slam_settings->addParameter(TypedParameter<int>("num_pts", "num_pts",     "",    &num_pts, &default_num_pts));
-    slam_settings->addParameter(TypedParameter<int>("fast_threshold", "fast_threshold",     "",    &fast_threshold, &default_fast_threshold));
-    slam_settings->addParameter(TypedParameter<int>("grid_x", "grid_x",     "",    &grid_x, &default_grid_x));
-    slam_settings->addParameter(TypedParameter<int>("grid_y", "grid_y",     "",    &grid_y, &default_grid_y));
-    slam_settings->addParameter(TypedParameter<int>("min_px_dist", "min_px_dist",     "",    &min_px_dist, &default_min_px_dist));
-    slam_settings->addParameter(TypedParameter<double>("knn_ratio", "knn_ratio",     "",    &knn_ratio, &default_knn_ratio));
+  // Extractor options
+  slam_settings->addParameter(TypedParameter<bool>("use_klt", "use_klt",     "",    &use_klt, &default_use_klt));
+  slam_settings->addParameter(TypedParameter<bool>("use_aruco", "use_aruco",     "",    &use_aruco, &default_use_aruco));
+  slam_settings->addParameter(TypedParameter<bool>("ds_aruco", "downsize_aruco",     "",    &downsize_aruco, &default_downsize_aruco));
+  slam_settings->addParameter(TypedParameter<int>("num_pts", "num_pts",     "",    &num_pts, &default_num_pts));
+  slam_settings->addParameter(TypedParameter<int>("fast_threshold", "fast_threshold",     "",    &fast_threshold, &default_fast_threshold));
+  slam_settings->addParameter(TypedParameter<int>("grid_x", "grid_x",     "",    &grid_x, &default_grid_x));
+  slam_settings->addParameter(TypedParameter<int>("grid_y", "grid_y",     "",    &grid_y, &default_grid_y));
+  slam_settings->addParameter(TypedParameter<int>("min_px_dist", "min_px_dist",     "",    &min_px_dist, &default_min_px_dist));
+  slam_settings->addParameter(TypedParameter<double>("knn_ratio", "knn_ratio",     "",    &knn_ratio, &default_knn_ratio));
 
+  // Update parameters
+  slam_settings->addParameter(TypedParameter<double>("up_msckf_sigma_px", "up_msckf_sigma_px",     "",    &up_msckf_sigma_px, &default_up_msckf_sigma_px));
+  slam_settings->addParameter(TypedParameter<double>("up_slam_sigma_px", "up_slam_sigma_px",     "",    &up_slam_sigma_px, &default_up_slam_sigma_px));
+  slam_settings->addParameter(TypedParameter<double>("up_aruco_sigma_px", "up_aruco_sigma_px",     "",    &up_aruco_sigma_px, &default_up_aruco_sigma_px));
+  slam_settings->addParameter(TypedParameter<int>("up_msckf_chi2_multipler", "up_msckf_chi2_multipler",     "",    &up_msckf_chi2_multipler, &default_up_msckf_chi2_multipler));
+  slam_settings->addParameter(TypedParameter<int>("up_slam_chi2_multipler", "up_slam_chi2_multipler",     "",    &up_slam_chi2_multipler, &default_up_slam_chi2_multipler));
+  slam_settings->addParameter(TypedParameter<int>("up_aruco_chi2_multipler", "up_aruco_chi2_multipler",     "",    &up_aruco_chi2_multipler, &default_up_aruco_chi2_multipler));
+  slam_settings->addParameter(TypedParameter<int>("max_slam_in_update", "max_slam_in_update",     "",    &max_slam_in_update, &default_max_slam_in_update));
+  slam_settings->addParameter(TypedParameter<int>("max_msckf_in_update", "max_msckf_in_update",     "",    &max_msckf_in_update, &default_max_msckf_in_update));
 
-    // Update parameters
-    slam_settings->addParameter(TypedParameter<double>("up_msckf_sigma_px", "up_msckf_sigma_px",     "",    &up_msckf_sigma_px, &default_up_msckf_sigma_px));
-    slam_settings->addParameter(TypedParameter<double>("up_slam_sigma_px", "up_slam_sigma_px",     "",    &up_slam_sigma_px, &default_up_slam_sigma_px));
-    slam_settings->addParameter(TypedParameter<double>("up_aruco_sigma_px", "up_aruco_sigma_px",     "",    &up_aruco_sigma_px, &default_up_aruco_sigma_px));
-    slam_settings->addParameter(TypedParameter<int>("up_msckf_chi2_multipler", "up_msckf_chi2_multipler",     "",    &up_msckf_chi2_multipler, &default_up_msckf_chi2_multipler));
-    slam_settings->addParameter(TypedParameter<int>("up_slam_chi2_multipler", "up_slam_chi2_multipler",     "",    &up_slam_chi2_multipler, &default_up_slam_chi2_multipler));
-    slam_settings->addParameter(TypedParameter<int>("up_aruco_chi2_multipler", "up_aruco_chi2_multipler",     "",    &up_aruco_chi2_multipler, &default_up_aruco_chi2_multipler));
+  slam_settings->addParameter(TypedParameter<std::string>("path_gt", "path_gt", "Path to ground truth poses", &path_gt, &default_path_gt));
 
-    slam_settings->addParameter(TypedParameter<std::string>("path_gt", "path_gt", "Path to ground truth poses", &path_gt, &default_path_gt));
-
-
-    // If our distortions are fisheye or not!
-    for(int i = 0; i < max_cameras; i++)
-    {
-        auto is_fisheye_name = "cam"+std::to_string(i)+"_is_fisheye";
-        bool temp_is_fisheye;
-        slam_settings->addParameter(TypedParameter<bool>(is_fisheye_name, is_fisheye_name, is_fisheye_name, &temp_is_fisheye, &default_is_fisheye));
-        is_fisheye.push_back(temp_is_fisheye);
-    }
+  // If our distortions are fisheye or not!
+  for(int i = 0; i < num_cameras; i++)
+  {
+    auto is_fisheye_name = "cam"+std::to_string(i)+"_is_fisheye";
+    bool temp_is_fisheye;
+    slam_settings->addParameter(TypedParameter<bool>(is_fisheye_name, is_fisheye_name, is_fisheye_name, &temp_is_fisheye, &default_is_fisheye));
+    is_fisheye.push_back(temp_is_fisheye);
+  }
 
     return true;
 }
 
 bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
-
-
-    //=========================================================================
-    // We collect sensors
-    //=========================================================================
+    // Get sensors
     slambench::io::CameraSensorFinder sensor_finder;
     IMU_sensor = (slambench::io::IMUSensor*)slam_settings->get_sensors().GetSensor(slambench::io::IMUSensor::kIMUType);
     assert(IMU_sensor != nullptr && "Init failed, did not found IMU.");
@@ -130,39 +124,35 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
     grey_sensors = sensor_finder.Find(slam_settings->get_sensors(), {{"camera_type", "grey"}});
     assert(grey_sensors[0] && "At least one camera needed");
 
-    std::vector<std::vector<double>> matrix_TCtoI_vec;
-    matrix_TCtoI_vec.push_back(std::vector<double>({0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
-                                                    0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
-                                                    -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
-                                                    0.0, 0.0, 0.0, 1.0}));
-    matrix_TCtoI_vec.push_back(std::vector<double>({0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-                                                    0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-                                                    -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-                                                    0.0, 0.0, 0.0, 1.0}));
-    grey_sensors.pop_back();
-    for ( auto i = 0; i < grey_sensors.size(); i++ )  {
-        ov_msckf::VioManagerOptions::camera_params camera;
-        camera.is_fisheye = is_fisheye[i];
-        camera.wh = std::pair<int,int>(grey_sensors[i]->Width,grey_sensors[i]->Height);
-        camera.cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensors[i]->Width,
-                            grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
-                            grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
-                            grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
-                            grey_sensors[i]->RadialTangentialDistortion[0],
-                            grey_sensors[i]->RadialTangentialDistortion[1],
-                            grey_sensors[i]->RadialTangentialDistortion[2],
-                            grey_sensors[i]->RadialTangentialDistortion[3];
-        //grey_sensors[i]->RadialTangentialDistortion[4];
+    for ( auto i = 0; i < num_cameras; i++ )  {
+        options.camera_fisheye.insert({i, is_fisheye[i]});
+        options.camera_wh.insert({i,std::pair<int,int>(grey_sensors[i]->Width,grey_sensors[i]->Height)});
+        Eigen::Matrix<double,8,1> cam_calib;
+        cam_calib << grey_sensors[i]->Intrinsics[0]*grey_sensors[i]->Width,
+                     grey_sensors[i]->Intrinsics[1]*grey_sensors[i]->Height,
+                     grey_sensors[i]->Intrinsics[2]*grey_sensors[i]->Width,
+                     grey_sensors[i]->Intrinsics[3]*grey_sensors[i]->Height,
+                     grey_sensors[i]->Distortion[0],
+                     grey_sensors[i]->Distortion[1],
+                     grey_sensors[i]->Distortion[2],
+                     grey_sensors[i]->Distortion[3];
+        options.camera_intrinsics.insert({i,cam_calib});
 
-        auto matrix_TCtoI = matrix_TCtoI_vec.at(i);
-        camera.T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
-                        matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
-                        matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
-                        matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
-        img.push_back(new cv::Mat ( grey_sensors[i]->Height ,  grey_sensors[i]->Width, CV_8UC1));
+        //auto vec_TCtoI = matrix_TCtoI_vec.at(i);
+        Eigen::Matrix4d T_CtoI = grey_sensors[i]->Pose.cast<double>();
+        //T_CtoI << vec_TCtoI.at(0), vec_TCtoI.at(1), vec_TCtoI.at(2), vec_TCtoI.at(3),
+        //    vec_TCtoI.at(4), vec_TCtoI.at(5), vec_TCtoI.at(6), vec_TCtoI.at(7),
+        //    vec_TCtoI.at(8), vec_TCtoI.at(9), vec_TCtoI.at(10), vec_TCtoI.at(11),
+        //    vec_TCtoI.at(12), vec_TCtoI.at(13), vec_TCtoI.at(14), vec_TCtoI.at(15);
+        Eigen::Matrix<double, 4, 1> rot_quat = rot_2_quat(T_CtoI.block(0,0,3,3).transpose());
+        Eigen::Matrix<double, 3, 1> tr_quat = T_CtoI.block(0,3,3,1);
+        Eigen::Matrix<double, 7, 1> extrinsics;
+        extrinsics<< rot_quat(0), rot_quat(1), rot_quat(2), rot_quat(3), tr_quat(0), tr_quat(1), tr_quat(2);
+        options.camera_extrinsics.insert({i,extrinsics});
+
+        img.push_back(new cv::Mat(grey_sensors[i]->Height, grey_sensors[i]->Width,CV_8UC1));
         img_buffers.push_back(new cv::Mat());
-        camera_input_s.push_back(make_sb_uint2(grey_sensors[i]->Width,grey_sensors[i]->Height));
-        options.cameras.push_back(camera);
+        camera_input_s.push_back(make_sb_uint2(grey_sensors[i]->Width, grey_sensors[i]->Height));
         grey_ready.push_back(false);
 
         auto frame_out = new slambench::outputs::Output("Frame_"+to_string(i), slambench::values::VT_FRAME);
@@ -170,10 +160,13 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
         slam_settings->GetOutputManager().RegisterOutput(frame_out);
         frame_outputs.push_back(frame_out);
     }
+    // TODO: delay for both cameras when using stereo?
+    options.calib_camimu_dt = calib_camimu_dt != 0.0 ? calib_camimu_dt : grey_sensors[0]->Delay;
 
-    options.feat_rep_str = feat_representation;
+    options.state_options.feat_rep_slam = ov_type::LandmarkRepresentation::from_string(feat_representation);
+    options.state_options.feat_rep_aruco = options.state_options.feat_rep_slam;
     options.state_options.do_fej = use_fej;
-    options.state_options.use_imu_avg = use_imu_avg;
+    options.state_options.imu_avg = use_imu_avg;
     options.state_options.use_rk4_integration = use_rk4_integration;
     options.state_options.do_calib_camera_pose = do_calib_camera_pose;
     options.state_options.do_calib_camera_intrinsics = do_calib_camera_intrinsics;
@@ -181,8 +174,10 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
     options.state_options.max_clone_size = max_clones;
     options.state_options.max_slam_features = max_slam;
     options.state_options.max_aruco_features = max_aruco;
-    options.state_options.max_cameras = max_cameras;
-    options.dt_statupdelay = dt_slam_delay;
+    options.state_options.num_cameras = num_cameras;
+    options.state_options.max_slam_in_update = max_slam_in_update;
+    options.state_options.max_msckf_in_update = max_msckf_in_update;
+    options.dt_slam_delay = dt_slam_delay;
 
     options.use_klt = use_klt;
     options.use_aruco = use_aruco;
@@ -212,7 +207,6 @@ bool sb_init_slam_system(SLAMBenchLibraryHelper * slam_settings)  {
     options.imu_noises.sigma_a = IMU_sensor->AcceleratorNoiseDensity;
     options.imu_noises.sigma_wb  = IMU_sensor->GyroscopeBiasDiffusion;//gyroscope_random_walk
     options.imu_noises.sigma_ab = IMU_sensor->AcceleratorBiasDiffusion;//accelerometer_random_walk
-    options.calib_camimu_dt(0) = calib_camimu_dt;
     options.init_window_time = init_window_time;
     options.init_imu_thresh = init_imu_thresh;
     options.gravity << vec_gravity_default[0],vec_gravity_default[1],vec_gravity_default[2];
@@ -243,7 +237,7 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
     }
     else
     {
-        for(int i = 0; i < grey_sensors.size(); i++)
+        for(size_t i = 0; i < grey_sensors.size(); i++)
         {
             if(s->FrameSensor == grey_sensors[i]) {
                 memcpy(img[i]->data, s->GetData(), s->GetSize());
@@ -261,7 +255,7 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
     }
 
     last_frame_timestamp = s->Timestamp;
-    for(auto ready : grey_ready)
+    for(bool ready : grey_ready)
         if(!ready)
             return false;
     return true;
@@ -278,12 +272,12 @@ bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
     else if (grey_ready.size() == 2 and grey_ready[0] and grey_ready[1]) {
         // process once we have initialized with the GT
         Eigen::Matrix<double, 17, 1> imustate;
-        if(!gt_states.empty() and !sys->intialized() and DatasetReader::get_gt_state(time_cam_buffer,imustate,gt_states)) {
+        if(!gt_states.empty() and !sys->initialized() and DatasetReader::get_gt_state(time_cam_buffer,imustate,gt_states)) {
             //biases are pretty bad normally, so zero them
             //imustate.block(11,0,6,1).setZero();
             sys->initialize_with_gt(imustate);
         }
-        if(gt_states.empty() || sys->intialized()) {
+        if(gt_states.empty() || sys->initialized()) {
             sys->feed_measurement_stereo(time_cam_buffer, *img_buffers[0], *img_buffers[1], 0, 1);
         }
         for(int i = 0; i < grey_ready.size();i++)
@@ -295,7 +289,6 @@ bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
     time_cam_buffer = time_cam;
     return true;
 }
-
 
 bool sb_clean_slam_system() {
     delete sys;
@@ -323,23 +316,18 @@ bool sb_update_outputs(SLAMBenchLibraryHelper *lib, const slambench::TimeStamp *
 
         std::cout<< "pose:" << matrix << std::endl;
         std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
-        pose_output->AddPoint(last_frame_timestamp, new slambench::values::PoseValue(matrix));
+        pose_output->AddPoint(*latest_output, new slambench::values::PoseValue(matrix));
     }
     // Display greyscale frames
     for(int i=0; i < frame_outputs.size(); i++)
         if(frame_outputs[i]->IsActive() && img[i]) {
 
             std::lock_guard<FastLock> lock (lib->GetOutputManager().GetLock());
-            frame_outputs[i]->AddPoint(last_frame_timestamp, new slambench::values::FrameValue(camera_input_s[i].x, camera_input_s[i].y,
-                                                                                               slambench::io::pixelformat::G_I_8,
-                                                                                               (void *) (img[i]->data)));
+            frame_outputs[i]->AddPoint(*latest_output, new slambench::values::FrameValue(camera_input_s[i].x, camera_input_s[i].y,
+                                                                                         slambench::io::pixelformat::G_I_8,
+                                                                                         (void *) (img[i]->data)));
 
         }
 
-
     return true;
 }
-
-
-
-

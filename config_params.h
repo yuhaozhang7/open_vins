@@ -15,7 +15,7 @@ static bool use_fej,
 static int max_clones,
         max_slam,
         max_aruco,
-        max_cameras;
+        num_cameras;
 
 static double dt_slam_delay, calib_camimu_dt;
 static const double default_dt_slam_delay = 5, default_calib_camimu_dt = 0.0;
@@ -34,7 +34,7 @@ static const bool default_use_fej = true,
 static const int default_max_clones = 11,
         default_max_slam = 50,
         default_max_aruco = 1024,
-        default_max_cameras = 2;
+        default_num_cameras = 2;
 
 
 // ===========================================================
@@ -106,6 +106,8 @@ static const int default_up_msckf_chi2_multipler = 1,
         default_up_slam_chi2_multipler = 1,
         default_up_aruco_chi2_multipler = 1;
 
+static int max_slam_in_update, max_msckf_in_update;
+static const int default_max_slam_in_update = 25, default_max_msckf_in_update = 999;
 
 // Camera intrinsic properties
 std::vector<bool> is_fisheye;

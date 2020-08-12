@@ -25,7 +25,8 @@
 #include <Eigen/Eigen>
 
 #include "utils/quat_ops.h"
-
+#include <map>
+#include <vector>
 namespace ov_core {
 
 

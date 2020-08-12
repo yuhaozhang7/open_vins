@@ -27,7 +27,7 @@
 #include <fstream>
 #include <iostream>
 #include <Eigen/Eigen>
-//#include <ros/ros.h>
+#include "colors.h"
 
 
 using namespace std;
@@ -73,8 +73,8 @@ namespace ov_core {
 
             // Check that it was successfull
             if (!file) {
-                std::cerr<<"ERROR: Unable to open groundtruth file..."<< std::endl;
-                std::cerr<<"ERROR: " << path.c_str()<< std::endl;
+                printf(RED "ERROR: Unable to open groundtruth file...\n" RESET);
+                printf(RED "ERROR: %s\n" RESET, path.c_str());
                 std::exit(EXIT_FAILURE);
             }
 
@@ -92,8 +92,8 @@ namespace ov_core {
                 while (getline(s, field, ',')) {
                     // Ensure we are in the range
                     if (i > 16) {
-                        std::cerr<<"ERROR: Invalid groudtruth line, too long!" << std::endl;
-                        std::cerr<<"ERROR: " << line.c_str() << std::endl;
+                        printf(RED "ERROR: Invalid groudtruth line, too long!\n" RESET);
+                        printf(RED "ERROR: %s\n" RESET, line.c_str());
                         std::exit(EXIT_FAILURE);
                     }
                     // Save our groundtruth state value
@@ -118,7 +118,7 @@ namespace ov_core {
 
             // Check that we even have groundtruth loaded
             if (gt_states.empty()) {
-                std::cerr<<"Groundtruth data loaded is empty, make sure you call load before asking for a state."<< std::endl;
+                printf(RED "Groundtruth data loaded is empty, make sure you call load before asking for a state.\n" RESET);
                 return false;
             }
 
@@ -134,14 +134,14 @@ namespace ov_core {
 
             // If close to this timestamp, then use it
             if(std::abs(closest_time-timestep) < 0.005) {
-                //ROS_INFO("init DT = %.4f", std::abs(closest_time-timestep));
-                //ROS_INFO("timestamp = %.15f", closest_time);
+                //printf("init DT = %.4f\n", std::abs(closest_time-timestep));
+                //printf("timestamp = %.15f\n", closest_time);
                 timestep = closest_time;
             }
 
             // Check that we have the timestamp in our GT file
             if(gt_states.find(timestep) == gt_states.end()) {
-                std::cerr<<"Unable to find" << timestep << "timestamp in GT file, wrong GT file loaded???" << std::endl;
+                printf(YELLOW "Unable to find %.6f timestamp in GT file, wrong GT file loaded???\n" RESET,timestep);
                 return false;
             }
 

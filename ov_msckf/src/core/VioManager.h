@@ -24,14 +24,16 @@
 
 #include <string>
 #include <algorithm>
+#include <fstream>
 #include <Eigen/StdVector>
+#include <boost/filesystem.hpp>
 
 #include "track/TrackAruco.h"
 #include "track/TrackDescriptor.h"
 #include "track/TrackKLT.h"
 #include "track/TrackSIM.h"
 #include "init/InertialInitializer.h"
-#include "feat/FeatureRepresentation.h"
+#include "types/LandmarkRepresentation.h"
 #include "types/Landmark.h"
 
 #include "state/Propagator.h"
@@ -39,7 +41,10 @@
 #include "state/StateHelper.h"
 #include "update/UpdaterMSCKF.h"
 #include "update/UpdaterSLAM.h"
+#include "update/UpdaterZeroVelocity.h"
+
 #include "VioManagerOptions.h"
+
 
 namespace ov_msckf {
 
@@ -60,10 +65,9 @@ namespace ov_msckf {
 
         /**
          * @brief Default constructor, will load all configuration variables
-         * @param nh ROS node handler which we will load parameters from
+         * @param params_ Parameters loaded from either ROS or CMDLINE
          */
-//        VioManager(ros::NodeHandle& nh);
-        VioManager(VioManagerOptions& options);
+        VioManager(VioManagerOptions& params_);
 
 
         /**
@@ -108,40 +112,47 @@ namespace ov_msckf {
         void initialize_with_gt(Eigen::Matrix<double,17,1> imustate) {
 
             // Initialize the system
-            state->imu()->set_value(imustate.block(1,0,16,1));
-            state->set_timestamp(imustate(0,0));
+            state->_imu->set_value(imustate.block(1,0,16,1));
+            state->_imu->set_fej(imustate.block(1,0,16,1));
+            state->_timestamp = imustate(0,0);
+            startup_time = imustate(0,0);
             is_initialized_vio = true;
 
+            // Cleanup any features older then the initialization time
+            trackFEATS->get_feature_database()->cleanup_measurements(state->_timestamp);
+            if(trackARUCO != nullptr) {
+                trackARUCO->get_feature_database()->cleanup_measurements(state->_timestamp);
+            }
+
             // Print what we init'ed with
-            std::cout<<"\033[0;32m[INIT]: INITIALIZED FROM GROUNDTRUTH FILE!!!!!\033[0m" << std::endl;
-            std::cout<<"\033[0;32m[INIT]: orientation = \033[0m" << state->imu()->quat()(0)
-                                                                 << state->imu()->quat()(1)
-                                                                 << state->imu()->quat()(2)
-                                                                 << state->imu()->quat()(3) << std::endl;
-            std::cout<<"\033[0;32m[INIT]: bias gyro = \033[0m" << state->imu()->bias_g()(0)
-                                                               << state->imu()->bias_g()(1)
-                                                               << state->imu()->bias_g()(2) << std::endl;
-            std::cout<<"\033[0;32m[INIT]: velocity = \033[0m" << state->imu()->vel()(0)
-                                                              << state->imu()->vel()(1)
-                                                              << state->imu()->vel()(2) << std::endl;
-            std::cout<<"\033[0;32m[INIT]: bias accel = \033[0m" << state->imu()->bias_a()(0)
-                                                                << state->imu()->bias_a()(1)
-                                                                << state->imu()->bias_a()(2) << std::endl;
-            std::cout<<"\033[0;32m[INIT]: position = \033[0m" << state->imu()->pos()(0)
-                                                              << state->imu()->pos()(1)
-                                                              << state->imu()->pos()(2) << std::endl;
+            printf(GREEN "[INIT]: INITIALIZED FROM GROUNDTRUTH FILE!!!!!\n" RESET);
+            printf(GREEN "[INIT]: orientation = %.4f, %.4f, %.4f, %.4f\n" RESET,state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3));
+            printf(GREEN "[INIT]: bias gyro = %.4f, %.4f, %.4f\n" RESET,state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2));
+            printf(GREEN "[INIT]: velocity = %.4f, %.4f, %.4f\n" RESET,state->_imu->vel()(0),state->_imu->vel()(1),state->_imu->vel()(2));
+            printf(GREEN "[INIT]: bias accel = %.4f, %.4f, %.4f\n" RESET,state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
+            printf(GREEN "[INIT]: position = %.4f, %.4f, %.4f\n" RESET,state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2));
 
         }
 
 
         /// If we are initialized or not
-        bool intialized() {
+        bool initialized() {
             return is_initialized_vio;
+        }
+
+        /// Timestamp that the system was initialized at
+        double initialized_time() {
+            return startup_time;
         }
 
         /// Accessor to get the current state
         State* get_state() {
             return state;
+        }
+
+        /// Accessor to get the current propagator
+        Propagator* get_propagator() {
+            return propagator;
         }
 
         /// Get feature tracker
@@ -162,17 +173,17 @@ namespace ov_msckf {
         /// Returns 3d SLAM features in the global frame
         std::vector<Eigen::Vector3d> get_features_SLAM() {
             std::vector<Eigen::Vector3d> slam_feats;
-            for (auto &f : state->features_SLAM()){
-                if((int)f.first <= state->options().max_aruco_features) continue;
-                if(FeatureRepresentation::is_relative_representation(f.second->_feat_representation)) {
+            for (auto &f : state->_features_SLAM) {
+                if((int)f.first <= state->_options.max_aruco_features) continue;
+                if(LandmarkRepresentation::is_relative_representation(f.second->_feat_representation)) {
                     // Assert that we have an anchor pose for this feature
                     assert(f.second->_anchor_cam_id!=-1);
                     // Get calibration for our anchor camera
-                    Eigen::Matrix<double, 3, 3> R_ItoC = state->get_calib_IMUtoCAM(f.second->_anchor_cam_id)->Rot();
-                    Eigen::Matrix<double, 3, 1> p_IinC = state->get_calib_IMUtoCAM(f.second->_anchor_cam_id)->pos();
+                    Eigen::Matrix<double, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->Rot();
+                    Eigen::Matrix<double, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->pos();
                     // Anchor pose orientation and position
-                    Eigen::Matrix<double,3,3> R_GtoI = state->get_clone(f.second->_anchor_clone_timestamp)->Rot();
-                    Eigen::Matrix<double,3,1> p_IinG = state->get_clone(f.second->_anchor_clone_timestamp)->pos();
+                    Eigen::Matrix<double,3,3> R_GtoI = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->Rot();
+                    Eigen::Matrix<double,3,1> p_IinG = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->pos();
                     // Feature in the global frame
                     slam_feats.push_back(R_GtoI.transpose() * R_ItoC.transpose()*(f.second->get_xyz(false) - p_IinC) + p_IinG);
                 } else {
@@ -185,17 +196,17 @@ namespace ov_msckf {
         /// Returns 3d ARUCO features in the global frame
         std::vector<Eigen::Vector3d> get_features_ARUCO() {
             std::vector<Eigen::Vector3d> aruco_feats;
-            for (auto &f : state->features_SLAM()){
-                if((int)f.first > state->options().max_aruco_features) continue;
-                if(FeatureRepresentation::is_relative_representation(f.second->_feat_representation)) {
+            for (auto &f : state->_features_SLAM) {
+                if((int)f.first > state->_options.max_aruco_features) continue;
+                if(LandmarkRepresentation::is_relative_representation(f.second->_feat_representation)) {
                     // Assert that we have an anchor pose for this feature
                     assert(f.second->_anchor_cam_id!=-1);
                     // Get calibration for our anchor camera
-                    Eigen::Matrix<double, 3, 3> R_ItoC = state->get_calib_IMUtoCAM(f.second->_anchor_cam_id)->Rot();
-                    Eigen::Matrix<double, 3, 1> p_IinC = state->get_calib_IMUtoCAM(f.second->_anchor_cam_id)->pos();
+                    Eigen::Matrix<double, 3, 3> R_ItoC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->Rot();
+                    Eigen::Matrix<double, 3, 1> p_IinC = state->_calib_IMUtoCAM.at(f.second->_anchor_cam_id)->pos();
                     // Anchor pose orientation and position
-                    Eigen::Matrix<double,3,3> R_GtoI = state->get_clone(f.second->_anchor_clone_timestamp)->Rot();
-                    Eigen::Matrix<double,3,1> p_IinG = state->get_clone(f.second->_anchor_clone_timestamp)->pos();
+                    Eigen::Matrix<double,3,3> R_GtoI = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->Rot();
+                    Eigen::Matrix<double,3,1> p_IinG = state->_clones_IMU.at(f.second->_anchor_clone_timestamp)->pos();
                     // Feature in the global frame
                     aruco_feats.push_back(R_GtoI.transpose() * R_ItoC.transpose()*(f.second->get_xyz(false) - p_IinC) + p_IinG);
                 } else {
@@ -205,6 +216,39 @@ namespace ov_msckf {
             return aruco_feats;
         }
 
+        /// Return true if we did a zero velocity update
+        bool did_zero_velocity_update(){
+            return did_zupt_update;
+        }
+
+        /// Return the zero velocity update image
+        cv::Mat get_zero_velocity_update_image() {
+            return zupt_image;
+        }
+
+        /// Returns the last timestamp we have marginalized (true if we have a state)
+        bool hist_last_marg_state(double &timestamp, Eigen::Matrix<double,7,1> &stateinG) {
+            if(hist_last_marginalized_time != -1) {
+                timestamp = hist_last_marginalized_time;
+                stateinG = hist_stateinG.at(hist_last_marginalized_time);
+                return true;
+            } else {
+                timestamp = -1;
+                stateinG.setZero();
+                return false;
+            }
+        }
+
+        /// Returns historical feature positions, and measurements times and uvs used to get its estimate.
+        void hist_get_features(std::unordered_map<size_t,Eigen::Vector3d> &feat_posinG,
+                               std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::VectorXf>>> &feat_uvs,
+                               std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::VectorXf>>> &feat_uvs_norm,
+                               std::unordered_map<size_t, std::unordered_map<size_t, std::vector<double>>> &feat_timestamps) {
+            feat_posinG = hist_feat_posinG;
+            feat_uvs = hist_feat_uvs;
+            feat_uvs_norm = hist_feat_uvs_norm;
+            feat_timestamps = hist_feat_timestamps;
+        }
 
 
     protected:
@@ -213,7 +257,7 @@ namespace ov_msckf {
         /**
          * @brief This function will try to initialize the state.
          *
-         * This should call on our initalizer and try to init the state.
+         * This should call on our initializer and try to init the state.
          * In the future we should call the structure-from-motion code from here.
          * This function could also be repurposed to re-initialize the system after failure.         *
          * @return True if we have successfully initialized
@@ -228,14 +272,24 @@ namespace ov_msckf {
         void do_feature_propagate_update(double timestamp);
 
 
+        /**
+         * @brief This function will update our historical tracking information.
+         * This historical information includes the best estimate of a feature in the global frame.
+         * For all features it also has the normalized and raw pixel coordinates at each timestep.
+         * The state is also recorded after it is marginalized out of the state.
+         * @param features Features using in the last update phase
+         */
+        void update_keyframe_historical_information(const std::vector<Feature*> &features);
+
+
+        /// Manager parameters
+        VioManagerOptions params;
+
         /// Our master state object :D
         State* state;
 
         /// Propagator of our state
         Propagator* propagator;
-
-        /// Boolean if we should do stereo tracking or if false do binocular
-        bool use_stereo = true;
 
         /// Our sparse feature tracker (klt or descriptor)
         TrackBase* trackFEATS = nullptr;
@@ -255,24 +309,35 @@ namespace ov_msckf {
         /// Our MSCKF feature updater
         UpdaterSLAM* updaterSLAM;
 
+        /// Our aruoc tracker
+        UpdaterZeroVelocity* updaterZUPT = nullptr;
+
         /// Good features that where used in the last update
         std::vector<Eigen::Vector3d> good_features_MSCKF;
 
-        // Timing variables
-        boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6;
+        // Timing statistic file and variables
+        std::ofstream of_statistics;
+        boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
 
         // Track how much distance we have traveled
         double timelastupdate = -1;
         double distance = 0;
 
-        // Start delay we should wait before inserting the first slam feature
-        double dt_statupdelay;
+        // Startup time of the filter
         double startup_time = -1;
 
-        // Camera intrinsics that we will load in
-        std::map<size_t,bool> camera_fisheye;
-        std::map<size_t,Eigen::VectorXd> camera_calib;
-        std::map<size_t,std::pair<int,int>> camera_wh;
+        // If we did a zero velocity update
+        bool did_zupt_update = false;
+        cv::Mat zupt_image;
+
+        // Historical information of the filter (last marg time, historical states, features seen from all frames)
+        double hist_last_marginalized_time = -1;
+        std::map<double,Eigen::Matrix<double,7,1>> hist_stateinG;
+        std::unordered_map<size_t, Eigen::Vector3d> hist_feat_posinG;
+        std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::VectorXf>>> hist_feat_uvs;
+        std::unordered_map<size_t, std::unordered_map<size_t, std::vector<Eigen::VectorXf>>> hist_feat_uvs_norm;
+        std::unordered_map<size_t, std::unordered_map<size_t, std::vector<double>>> hist_feat_timestamps;
+
 
     };
 

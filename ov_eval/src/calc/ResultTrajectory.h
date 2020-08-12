@@ -27,7 +27,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <ros/ros.h>
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 
@@ -35,6 +34,7 @@
 #include "utils/Statistics.h"
 #include "utils/Math.h"
 #include "utils/Loader.h"
+#include "utils/Colors.h"
 
 
 namespace ov_eval {
@@ -82,6 +82,20 @@ namespace ov_eval {
          */
         void calculate_ate(Statistics &error_ori, Statistics &error_pos);
 
+        /**
+         * @brief Computes the Absolute Trajectory Error (ATE) for this trajectory in the 2d x-y plane.
+         *
+         * This will first do our alignment of the two trajectories.
+         * We just grab the yaw component of the orientation and the xy plane error.
+         * Then at each point the error will be calculated and normed as follows:
+         * \f{align*}{
+         * e_{ATE} &= \sqrt{ \frac{1}{K} \sum_{k=1}^{K} ||\mathbf{x}_{k,i} \boxminus \hat{\mathbf{x}}^+_{k,i}||^2_{2} }
+         * \f}
+         *
+         * @param error_ori Error values for the orientation (yaw error)
+         * @param error_pos Error values for the position (xy error)
+         */
+        void calculate_ate_2d(Statistics &error_ori, Statistics &error_pos);
 
         /**
          * @brief Computes the Relative Pose Error (RPE) for this trajectory
@@ -160,8 +174,7 @@ namespace ov_eval {
          */
         std::vector<size_t> compute_comparison_indices_length(std::vector<double> &distances, double distance, double max_dist_diff) {
 
-            // Our max id and the vector of end ids for our pose indexes
-            int max_idx = distances.size() - 1;
+            // Vector of end ids for our pose indexes
             std::vector<size_t> comparisons;
 
             // Loop through each pose in our trajectory (i.e. our distance vector generated from the trajectory).
@@ -169,22 +182,22 @@ namespace ov_eval {
 
                 // Loop through and find the pose that minimized the difference between
                 // The desired trajectory distance and our current trajectory distance
-                double distance_startpose = distances[idx];
+                double distance_startpose = distances.at(idx);
                 int best_idx = -1;
                 double best_error = max_dist_diff;
-                for (int i = idx; i < max_idx; i++) {
-                    if (std::abs(distances[i] - (distance_startpose + distance)) < best_error) {
+                for (size_t i = idx; i < distances.size(); i++) {
+                    if (std::abs(distances.at(i) - (distance_startpose + distance)) < best_error) {
                         best_idx = i;
-                        best_error = std::abs(distances[i] - (distance_startpose + distance));
+                        best_error = std::abs(distances.at(i) - (distance_startpose + distance));
                     }
                 }
 
                 // If we have an end id that reached this trajectory distance then add it!
-                // Else we can break since we are at the end of the trajectory and thus won't find any more segments of this length
+                // Else this isn't a valid segment, thus we shouldn't add it (we will try again at the next pose)
+                // NOTE: just because we searched through all poses and didn't find a close one doesn't mean we have ended
+                // NOTE: this could happen if there is a gap in the groundtruth poses and we just couldn't find a pose with low error
                 if (best_idx != -1) {
                     comparisons.push_back(best_idx);
-                } else {
-                    break;
                 }
 
             }
