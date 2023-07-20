@@ -15,6 +15,8 @@ target_link_libraries(${appname}-original
         ${thirdparty_libraries}
         ${OpenCV_LIBS}
         )
+
+install(TARGETS ${appname}-original DESTINATION  lib/)
         
 SET(SLAMBENCH_C_WRAPPER	-Wl,--whole-archive -L${WRAPPER_PATH} slambench-c-wrapper	-Wl,--no-whole-archive)
 SET(NULL_FILE_PATH	${WRAPPER_PATH}/null.cpp)
