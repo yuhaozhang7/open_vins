@@ -119,7 +119,8 @@ else()
 
     add_executable(run_simulation src/run_simulation.cpp)
     target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
-
+    install(TARGETS run_simulation DESTINATION  lib/)
+    
 endif()
 #
 #
