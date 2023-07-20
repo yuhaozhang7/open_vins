@@ -96,7 +96,7 @@ endif()
 add_library(ov_msckf_lib SHARED ${library_source_files})
 target_link_libraries(ov_msckf_lib ${thirdparty_libraries})
 target_include_directories(ov_msckf_lib PUBLIC src)
-
+install(TARGETS ov_msckf_lib DESTINATION  lib/)
 
 ##################################################
 # Make binary files!
@@ -105,12 +105,15 @@ if (catkin_FOUND)
 
     add_executable(run_serial_msckf src/ros_serial_msckf.cpp)
     target_link_libraries(run_serial_msckf ov_msckf_lib ${thirdparty_libraries})
-
+    install(TARGETS run_serial_msckf DESTINATION  lib/)
+    
     add_executable(run_subscribe_msckf src/ros_subscribe_msckf.cpp)
     target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
+    install(TARGETS run_subscribe_msckf DESTINATION  lib/)
 
     add_executable(run_simulation src/run_simulation.cpp)
     target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
+    install(TARGETS run_simulation DESTINATION  lib/)
 
 else()
 

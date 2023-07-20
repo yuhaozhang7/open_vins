@@ -80,7 +80,7 @@ add_library(ov_core_lib SHARED
 )
 target_link_libraries(ov_core_lib ${thirdparty_libraries})
 target_include_directories(ov_core_lib PUBLIC src)
-
+install(TARGETS ov_core_lib DESTINATION  lib/)
 
 ##################################################
 # Make binary files!
@@ -88,8 +88,11 @@ target_include_directories(ov_core_lib PUBLIC src)
 if (catkin_FOUND)
     add_executable(test_tracking src/test_tracking.cpp)
     target_link_libraries(test_tracking ov_core_lib ${thirdparty_libraries})
+    install(TARGETS test_tracking DESTINATION  lib/)
 endif()
 
 
 add_executable(test_webcam src/test_webcam.cpp)
 target_link_libraries(test_webcam ov_core_lib ${thirdparty_libraries})
+install(TARGETS test_webcam DESTINATION  lib/)
+
