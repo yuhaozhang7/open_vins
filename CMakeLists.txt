@@ -3,7 +3,7 @@ project(openvins)
 set(appname openvins)
 set(CORE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ov_core/src)
 set(MSCKF_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ov_msckf/src)
-include_directories(${SLAMFUSE_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+include_directories(${SLAMFUSE_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR})
 add_subdirectory(ov_core)
 add_subdirectory(ov_msckf)
 
